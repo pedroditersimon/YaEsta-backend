@@ -27,8 +27,7 @@ class Auth {
 }
 
 // ------------ register ------------>
-authRouter.route('/register').get((req, res, next) => res.send(registerHtml));
-authRouter.route('/register').post(async (req, res, next) => {
+const register = async (req, res, next) => {
     var { username, password, repeat_password } = req.fields;
 
     // check password
@@ -52,11 +51,12 @@ authRouter.route('/register').post(async (req, res, next) => {
 
     // after registration -> login
     return login(req, res, next);
-});
+};
+authRouter.route('/register').get((req, res, next) => res.send(registerHtml)); // GET
+authRouter.route('/register').post(register); // POST
 
 
 // ------------ login ------------>
-authRouter.route('/login').get((req, res, next) => res.send(loginHtml));
 const login = async (req, res, next) => {
     var { username, password } = req.fields;
 
@@ -90,8 +90,19 @@ const login = async (req, res, next) => {
     });
     return res.status(200).json({ message: `Logged as ${username}!` });
 };
-authRouter.route('/login').post(login);
+authRouter.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
+authRouter.route('/login').post(login); // POST
 
+
+// ------------ logout ------------>
+const logout = async (req, res, next) => {
+    res.cookie("auth_token", null, {
+        httpOnly: true,
+        maxAge: 1, // 1ms
+    });
+    return res.status(200).json({ message: `Logout!` });
+};
+authRouter.route('/logout').get(logout); // GET
 
 // ------------ token authentication middleware ------------>
 const verifyToken = (req, res, next) => {

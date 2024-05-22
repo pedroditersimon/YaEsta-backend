@@ -14,11 +14,19 @@ app.use(cookieParser());
 import formidableMiddleware from 'express-formidable';
 app.use(formidableMiddleware());
 
-import { apiRouter } from "./api.mjs";
-app.use(apiRouter);
-
+// auth
 import { authRouter } from "./auth.mjs";
 app.use(authRouter);
+
+// Admin role api
+//import { adminApiRouter } from "./adminApi.mjs";
+//app.use("/admin", userApiRouter);
+
+// User role api
+import { userApiRouter } from "./userApi.mjs";
+app.use("/", userApiRouter);
+
+
 
 const server = app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);
