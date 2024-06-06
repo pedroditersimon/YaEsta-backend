@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken"
 const TOKEN_SECRET = process.env.TOKEN_SECRET;
 
 import express, { json } from "express";
-const authRouter = express.Router();
+const router = express.Router();
 
 class Auth {
     _id;
@@ -52,8 +52,8 @@ const register = async (req, res, next) => {
     // after registration -> login
     return login(req, res, next);
 };
-authRouter.route('/register').get((req, res, next) => res.send(registerHtml)); // GET
-authRouter.route('/register').post(register); // POST
+router.route('/register').get((req, res, next) => res.send(registerHtml)); // GET
+router.route('/register').post(register); // POST
 
 
 // ------------ login ------------>
@@ -90,8 +90,8 @@ const login = async (req, res, next) => {
     });
     return res.status(200).json({ message: `Logged as ${username}!` });
 };
-authRouter.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
-authRouter.route('/login').post(login); // POST
+router.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
+router.route('/login').post(login); // POST
 
 
 // ------------ logout ------------>
@@ -102,7 +102,7 @@ const logout = async (req, res, next) => {
     });
     return res.status(200).json({ message: `Logout!` });
 };
-authRouter.route('/logout').get(logout); // GET
+router.route('/logout').get(logout); // GET
 
 // ------------ token authentication middleware ------------>
 const verifyToken = (req, res, next) => {
@@ -145,4 +145,4 @@ const notAuthorizedError = (res) => {
     return res.status(401).json({ message: `Not Authorized` });
 };
 
-export { authRouter, verifyToken, compareUserAuth, notAuthorizedError }
+export { router, verifyToken, compareUserAuth, notAuthorizedError }

@@ -15,17 +15,20 @@ import formidableMiddleware from 'express-formidable';
 app.use(formidableMiddleware());
 
 // auth
-import { authRouter } from "./auth.mjs";
+import { router as authRouter } from "./auth.mjs";
 app.use(authRouter);
 
 // Admin role api
-//import { adminApiRouter } from "./adminApi.mjs";
-//app.use("/admin", userApiRouter);
+import { router as adminApiRouter } from "./adminApi.mjs";
+app.use("/admin/", adminApiRouter);
 
 // User role api
-import { userApiRouter } from "./userApi.mjs";
+import { router as userApiRouter } from "./userApi.mjs";
 app.use("/", userApiRouter);
 
+// Manage api
+import { router as manageApiRouter } from "./manageApi.mjs";
+app.use("/", manageApiRouter);
 
 
 const server = app.listen(port, () => {

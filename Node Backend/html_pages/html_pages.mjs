@@ -19,5 +19,7 @@ async function getHTML(path) {
 // load html files
 const registerHtml = await getHTML("./html_pages/register.html");
 const loginHtml = await getHTML("./html_pages/login.html");
+const createChannelHtml = await getHTML("./html_pages/create_channel.html");
+const createChannelEventHtml = await getHTML("./html_pages/create_event.html");
 
-export { registerHtml, loginHtml };
+export { registerHtml, loginHtml, createChannelHtml, createChannelEventHtml };

@@ -4,14 +4,42 @@ import { dbHandler, Channel, ChannelEvent } from "./db/DatabaseHandler.mjs";
 import { verifyToken, notAuthorizedError } from "./auth.mjs";
 
 import express from "express";
-const userApiRouter = express.Router();
+const router = express.Router();
 
-// TODO: remove and hide internal information from response objects (Channels, Events)
+
+// ------------ Response models ------------>
+// used to remove internal information from response objects, contains only necessary data
+class ResponseChannel {
+    _id;
+    tittle = "";
+
+    isPublic = false;
+
+    // IDs list
+    events = [];
+
+    constructor(data=null) {
+        if (data)
+            this.updateProperties(data);
+    }
+
+    updateProperties(data) {
+        for (let key in this) {
+            if (data.hasOwnProperty(key)) {
+                this[key] = data[key];
+            }
+        }
+    }
+
+    isValid() {
+        return this._id != undefined && this._id != null;
+    }
+}
 
 
 // ------------ public channel search ------------>
-userApiRouter.route('/channel/search').get((req, res, next) => res.send('provide channel_tittle'));
-userApiRouter.route('/channel/search/:channel_tittle').get( verifyToken, async (req, res) => {
+router.route('/channel/search').get((req, res, next) => res.send('provide channel_tittle'));
+router.route('/channel/search/:channel_tittle').get( verifyToken, async (req, res) => {
     var { channel_tittle } = req.params;
 
     // get public channels
@@ -19,13 +47,16 @@ userApiRouter.route('/channel/search/:channel_tittle').get( verifyToken, async (
     if (!channels)
         return res.send(`No channels found with id ${channel_tittle}`);
 
-    res.send(channels);
+    // transform given channel from db to ResponseChannel
+    var resChannels = channels.map(c => new ResponseChannel(c));
+
+    res.send(resChannels);
 });
 
 
 // ------------ get channel by id ------------>
-userApiRouter.route('/channel').get( (req, res, next) => res.send('provide channel_id'));
-userApiRouter.route('/channel/:channel_id').get( verifyToken, async (req, res, next) => {
+router.route('/channel').get( (req, res, next) => res.send('provide channel_id'));
+router.route('/channel/:channel_id').get( verifyToken, async (req, res, next) => {
     var { channel_id } = req.params;
     var auth = req.auth;
 
@@ -43,13 +74,16 @@ userApiRouter.route('/channel/:channel_id').get( verifyToken, async (req, res, n
             return notAuthorizedError(res);
     }
 
-    res.send(channel);
+    // transform given channel from db to ResponseChannel
+    var resChannel = new ResponseChannel(channel);
+
+    res.send(resChannel);
 });
 
 
 // ------------ get event by id ------------>
-userApiRouter.route('/event').get( (req, res, next) => res.send('provide event_id'));
-userApiRouter.route('/event/:event_id').get( verifyToken, async (req, res, next) => {
+router.route('/event').get( (req, res, next) => res.send('provide event_id'));
+router.route('/event/:event_id').get( verifyToken, async (req, res, next) => {
     var { event_id } = req.params;
     var auth = req.auth;
 
@@ -77,8 +111,8 @@ userApiRouter.route('/event/:event_id').get( verifyToken, async (req, res, next)
 
 
 // ------------ get channel events ------------>
-userApiRouter.route('/channel_events').get( (req, res, next) => res.send('provide channel_id'));
-userApiRouter.route('/channel_events/:channel_id').get( verifyToken, async (req, res, next) => {
+router.route('/channel_events').get( (req, res, next) => res.send('provide channel_id'));
+router.route('/channel_events/:channel_id').get( verifyToken, async (req, res, next) => {
     var { channel_id } = req.params;
     var auth = req.auth;
 
@@ -106,7 +140,7 @@ userApiRouter.route('/channel_events/:channel_id').get( verifyToken, async (req,
 
 
 // ------------ get logged user channels ------------>
-userApiRouter.route('/user_channels').get( verifyToken, async (req, res, next) => {
+router.route('/user_channels').get( verifyToken, async (req, res, next) => {
     var auth = req.auth;
 
     // get channels
@@ -114,7 +148,10 @@ userApiRouter.route('/user_channels').get( verifyToken, async (req, res, next) =
     if (!channels) 
         return res.send(`No user found with id ${user_id}`);
 
-    res.send(channels);
+    // transform given channel from db to ResponseChannel
+    var resChannels = channels.map(c => new ResponseChannel(c));
+
+    res.send(resChannels);
 });
 
-export { userApiRouter }
+export { router }
