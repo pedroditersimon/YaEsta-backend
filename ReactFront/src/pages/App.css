@@ -1,0 +1,80 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  gap: 1vw;
+  align-items: flex-start;  /* This ensures that all items are aligned to the left */
+  padding: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: row;
+  gap: 1vw;
+  align-items: flex-start;  /* This ensures that all items are aligned to the left */
+  justify-content: center;
+}
+.list-center {
+  display: flex;
+  flex-direction: row;
+  gap: 1vw;
+  align-items: center;  /* This ensures that all items are aligned to the left */
+  justify-content: center;
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 8px 16px;
+  margin: 0; /* Applied only to the search button */
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.delete-button:active:not(:disabled) {
+  background-color: #bd2130;
+}
+
+
+.deleted-message {
+  color: red;
+  font-size: 14px;
+}
+
+
+
+/* Combine the styles for both search and refresh buttons */
+.search-button {
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 0; /* Applied only to the search button */
+}
+
+
+.search-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.search-button:active:not(:disabled) {
+  background-color: #003f7f;
+}
+
+
+.delete-button:disabled,
+.search-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

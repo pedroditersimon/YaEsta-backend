@@ -1,0 +1,30 @@
+.search-channel-panel {
+    font-family: Arial, sans-serif;
+    color: #333;
+    padding: 16px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.search-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.search-input {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 16px;
+    width: calc(100% - 20px);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+

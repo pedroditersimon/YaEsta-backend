@@ -1,0 +1,9 @@
+.channels-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.channel-item {
+    margin: 16px 0;
+}

@@ -1,0 +1,10 @@
+.VideoList {
+  width: fit-content;
+  border-radius: 22px;
+  padding: 1vw;
+
+  background-color: #0d0d0d;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vw;
+}

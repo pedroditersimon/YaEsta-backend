@@ -1,0 +1,36 @@
+.Video {
+  background-color: #f2f2f2;
+
+  width: 40vw;
+  height: 5vw;
+
+  border-radius: 15px;
+  padding: 1.5vw;
+
+  display: inline-flex;
+  flex-direction: row;
+
+  align-items: center;
+  gap: 1vw;
+}
+
+.Video > a {
+  color: #0d0d0d;
+  text-decoration: none;
+  text-align: left;
+
+  display: inline-flex;
+  flex-direction: column;
+}
+.Video h3 {
+  margin: 0;
+  font-size: 1vw;
+  }
+.Video p {
+  margin: 0;
+  font-size: 0.9vw;
+}
+
+.Video > .LikeButton {
+  margin-left: auto;
+}
