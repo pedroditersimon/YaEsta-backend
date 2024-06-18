@@ -1,9 +1,20 @@
 import 'dotenv/config';
+import morgan from 'morgan';
 
 import express from "express";
 const app = express();
-const port = 3000;
+const port = 3001;
 app.use(express.json());
+
+// CORS
+import cors from "cors";
+app.use(cors({
+  origin: ['http://localhost:3000'], // Replace with your frontend domain
+  credentials: true, // Enable cookies and HTTP authentication
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(morgan("dev"));
 
 import cookieParser from "cookie-parser";
 app.use(cookieParser());
@@ -16,7 +27,7 @@ app.use(formidableMiddleware());
 
 // auth
 import { router as authRouter } from "./auth.mjs";
-app.use(authRouter);
+app.use("/", authRouter);
 
 // Admin role api
 import { router as adminApiRouter } from "./adminApi.mjs";
@@ -30,9 +41,8 @@ app.use("/", userApiRouter);
 import { router as manageApiRouter } from "./manageApi.mjs";
 app.use("/", manageApiRouter);
 
-
-const server = app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+const server = app.listen(port, async () => {
+  console.log(`Example app listening at http://localhost:${port}`)
 });
 
 // Handling Error

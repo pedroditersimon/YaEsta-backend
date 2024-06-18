@@ -1,91 +1,9 @@
 import { MongoDBClient } from "./MongoDBClient.mjs";
 
-class User {
-    _id;
-    username = "";
-    password = "";
-
-    // IDs list
-    subscribed_channels = [];
-
-    constructor(data=null) {
-        if (data)
-            this.updateProperties(data);
-    }
-
-    updateProperties(data) {
-        for (let key in this) {
-            if (data.hasOwnProperty(key)) {
-                this[key] = data[key];
-            }
-        }
-    }
-
-    isValid() {
-        return this._id != undefined && this._id != null;
-    }
-}
-
-class Channel {
-    _id;
-    tittle = "";
-
-    isPublic = false;
-
-    // IDs list
-    members = [];
-    admins = [];
-
-    // IDs list
-    events = [];
-
-    constructor(data=null) {
-        if (data)
-            this.updateProperties(data);
-    }
-
-    updateProperties(data) {
-        for (let key in this) {
-            if (data.hasOwnProperty(key)) {
-                this[key] = data[key];
-            }
-        }
-    }
-
-    isValid() {
-        return this._id != undefined && this._id != null;
-    }
-}
-
-class ChannelEvent {
-    _id;
-    channel_id;
-
-    tittle = "";
-    description = "";
-
-    action_date;
-    notice_time;
-
-    map_location;
-
-    constructor(data=null) {
-        if (data)
-            this.updateProperties(data);
-    }
-
-    updateProperties(data) {
-        for (let key in this) {
-            if (data.hasOwnProperty(key)) {
-                this[key] = data[key];
-            }
-        }
-    }
-
-    isValid() {
-        return this._id != undefined && this._id != null;
-    }
-}
+// get models
+import { User, Channel, ChannelEvent } from "../models/models.mjs";
+import { ObjectId } from "mongodb";
+import { raw } from "express";
 
 
 class DataBaseHandler {
@@ -103,8 +21,16 @@ class DataBaseHandler {
         if (!(newChannel instanceof Channel))
             return new Channel();
 
-        var operation = await this.mongoClient.insertOne("channels", newChannel);
-        var channel = await this.get_channel_by_id(operation.insertedId.toString());
+        var result = await this.mongoClient.insertOne("channels", newChannel);
+        if (!result.acknowledged)
+            return new Channel();
+
+        const channel_id = result.insertedId.toString();
+
+        var channel = await this.get_channel_by_id(channel_id);
+        if (!channel.isValid()) 
+            return new Channel();
+
         return channel;
     }
 
@@ -121,12 +47,15 @@ class DataBaseHandler {
             await this.unsubscribe_user_from_channel(user_id, channel._id.toString());
         }
 
+        // delete all events
+        for (var i = 0; i < channel.events.length; i++) {
+            var event_id = channel.events[i];
+            await this.delete_event(event_id);
+        }
+
         // delete channel from db
         var result = await this.mongoClient.deleteOne("channels", channel._id.toString());
-        if (!result.acknowledged)
-            return false;
-
-        return true;
+        return result.acknowledged;
     }
 
 
@@ -159,8 +88,10 @@ class DataBaseHandler {
             { $unset: ["_id"] } // remove _id from setter
         ];
 
+        insertObj = {"subscribed_channels": user.subscribed_channels};
+
         // update in db
-        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj, false);
+        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -170,8 +101,10 @@ class DataBaseHandler {
             { $unset: ["_id"] } // remove _id from setter
         ];
 
+        insertObj = {"members": channel.members};
+
         // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj, false);
+        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -204,8 +137,10 @@ class DataBaseHandler {
             { $unset: ["_id"] } // remove _id from setter
         ];
 
+        insertObj = {"subscribed_channels": user.subscribed_channels};
+
         // update in db
-        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj, false);
+        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -215,8 +150,10 @@ class DataBaseHandler {
             { $unset: ["_id"] } // remove _id from setter
         ];
 
+        insertObj = {"members": channel.members};
+
         // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj, false);
+        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -259,14 +196,50 @@ class DataBaseHandler {
             { $unset: ["_id"] } // remove _id from setter
         ];
 
+        insertObj = {"events": channel.events};
+
         // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id.toString()}, insertObj, false);
+        var result = await this.mongoClient.updateOneID("channels", channel._id.toString(), insertObj);
         if (!result.acknowledged)
             return new ChannelEvent();
 
         return event;
     }
 
+
+    async delete_event(event_id) {
+        // get event
+        var event = await this.get_event_by_id(event_id);
+        if (!event.isValid()) 
+            return false;
+        
+        // get channel
+        var channel = await this.get_channel_by_id(event.channel_id);
+        if (!channel.isValid()) 
+            return false;
+
+        // remove from list
+        var index = channel.events.indexOf(event_id);
+        if (index > -1)
+            channel.events.splice(index, 1);
+
+        var insertObj =
+        [
+            { $set: {"events": channel.events} },
+            { $unset: ["_id"] } // remove _id from setter
+        ];
+
+        insertObj = {"events": channel.events};
+
+        // update in db
+        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
+        if (!result.acknowledged)
+            return false;
+
+        // delete event from db
+        var result = await this.mongoClient.deleteOne("events", event._id.toString());
+        return result.acknowledged;
+    }
 
     // ------------ getters ------------>
 
@@ -281,7 +254,7 @@ class DataBaseHandler {
     }
 
     async get_channel_by_id(channel_id) {
-        var rawChannel = await this.mongoClient.findOneIDFrom("channels", channel_id);
+        var rawChannel = await this.mongoClient.findOneIDFrom("channels", channel_id, Channel.getPipeline());
         return new Channel(rawChannel);
     }
 
@@ -291,17 +264,15 @@ class DataBaseHandler {
     }
 
     async get_events_by_channel_id(channel_id, count=20) {
-        var cursor = await this.mongoClient.getManyFrom("events", {channel_id: channel_id});
+        const pipeline = [
+            { 
+                $match: { channel_id: channel_id } 
+            },
+            { $limit: count },
+        ];
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
 
-        var events = [];
-        var it = 0;
-        for await (const jsonObj of cursor) {
-            events.push(new ChannelEvent(jsonObj));
-
-            if (++it >= count)
-                break;
-        }
-        return events;
+        return docs.map((d) => new ChannelEvent(d));
     }
 
     async get_channels_by_user_id(user_id, count=20) {
@@ -310,42 +281,38 @@ class DataBaseHandler {
         
         // user not found, stop here
         if (!user.isValid())
-            return {};
+            return null;
+
+        // convert string ids from ObjectId of mongo
+        var subscribed_channels = this.mongoClient.getObjectIdList(user.subscribed_channels);
 
         // get every channel with maximum given count
-        var subscribed_channels = this.mongoClient.getObjectIdList(user.subscribed_channels);
-        var cursor = await this.mongoClient.getManyFrom("channels",
-            {_id: {$in: subscribed_channels} }
-        );
+        const pipeline = [
+            { 
+                $match: { _id: {$in: subscribed_channels} } 
+            },
+            { $limit: count },
+            ...Channel.getPipeline(),
+        ];
+        const docs = await this.mongoClient.getAggregate("channels", pipeline);
 
-        var channels = [];
-        var it = 0;
-        for await (const jsonObj of cursor) {
-            channels.push(new Channel(jsonObj));
-
-            if (++it >= count)
-                break;
-        }
-        return channels;
+        return docs.map((d) => new Channel(d));
     } 
 
-    async get_public_channels_by_tittle(channel_tittle, count=20) {
-        // get all channels that match with given tittle (with a maximum count)
-        var cursor = await this.mongoClient.getManyFrom("channels",
-            {$and: [
-                {tittle: {$regex: channel_tittle}},
-                {isPublic: true}
-        ]});
-
-        var channels = [];
-        var it = 0;
-        for await (const jsonObj of cursor) {
-            channels.push(new Channel(jsonObj));
-
-            if (++it >= count)
-                break;
-        }
-        return channels;
+    async get_public_channels_by_title(channel_title, count=20) {
+        const pipeline = [
+            { 
+                $match: { 
+                    $and: [
+                        { title: { $regex: channel_title } },
+                        { isPublic: true }
+                ]}
+            },
+            { $limit: count },
+            ...Channel.getPipeline(),
+        ];
+        const docs = await this.mongoClient.getAggregate("channels", pipeline);
+        return docs.map((d) => new Channel(d));
     } 
 
 
@@ -373,4 +340,4 @@ class DataBaseHandler {
 // connect database
 const dbHandler = new DataBaseHandler();
 
-export { DataBaseHandler, dbHandler, User, Channel, ChannelEvent };
+export { DataBaseHandler, dbHandler };

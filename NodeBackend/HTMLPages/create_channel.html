@@ -8,18 +8,13 @@
   </head>
   <body>
     <div class="container-sm">
-      <form action="/create/event" method="post">
+      <form action="/create/channel" method="post">
         <div class="mb-3">
-          <label for="tittle" class="form-label">Event tittle</label>
-          <input type="text" class="form-control" name="tittle" id="tittle" aria-describedby="tittleHelp">
-          <div id="tittleHelp" class="form-text" style="display: none;">We'll never share your email with anyone else.</div>
+          <label for="title" class="form-label">Channel title</label>
+          <input type="text" class="form-control" name="title" id="title" aria-describedby="titleHelp">
+          <div id="titleHelp" class="form-text" style="display: none;">We'll never share your email with anyone else.</div>
         </div>
-        <div class="mb-3">
-          <label for="channel_id" class="form-label">channel_id</label>
-          <input type="text" class="form-control" name="channel_id" id="channel_id" aria-describedby="tittleHelp">
-          <div id="tittleHelp" class="form-text" style="display: none;">We'll never share your email with anyone else.</div>
-        </div>
-        <div class="mb-3 form-check" style="display: none;">
+        <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" name="isPublic" id="isPublic">
           <label class="form-check-label" for="isPublic">Is Public</label>
         </div>

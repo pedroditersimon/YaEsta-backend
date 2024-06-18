@@ -43,33 +43,45 @@ class MongoDBClient {
         return ids;
     }
 
-    async findOneFrom(collectionName, query) {
-        const collection = this.database.collection(collectionName);
-        const dbResult = await collection.findOne( query );
-        return dbResult;
+    async getAggregate(collectionName, pipeline) {
+        return await this.database.collection(collectionName).aggregate(pipeline).toArray();
     }
 
-    async findOneIDFrom(collectionName, objID) {
+    async getManyFrom(collectionName, match, limit=20, aggStages=[]) {
+        const pipeline = [
+            { $match: match },
+            { $limit: limit },
+            ...aggStages
+        ];
+
+        return await this.getAggregate(collectionName, pipeline);
+    }
+
+    async findOneFrom(collectionName, match, aggStages=[]) {
+        const pipeline = [
+            { $match: match },
+            { $limit: 1 },
+            ...aggStages
+        ];
+
+        const docs = await this.getAggregate(collectionName, pipeline);
+        return docs.length > 0 ? docs[0] : {};
+    }
+
+    async findOneIDFrom(collectionName, objID, aggStages=[]) {
         // prevent wrong id
         if (objID.length != 24)
             return {};
 
-        const collection = this.database.collection(collectionName);
-        const dbResult = await collection.findOne( {"_id": new ObjectId(objID)} );
-        return dbResult;
+        const match = { _id: new ObjectId(objID) };
+        return await this.findOneFrom(collectionName, match, aggStages);
     }
 
-
-    async getManyFrom(collectionName, query, options = {}, sort = {}) {
-        const collection = this.database.collection(collectionName);
-        const dbResult = await collection
-            .find( query , options )
-            .sort(sort);
-
-        return dbResult;
-    }
 
     async insertOne(collectionName, jsonObj) {
+        if (jsonObj._id !== undefined)
+            delete jsonObj._id;
+
         const collection = this.database.collection(collectionName);
         const dbResult = await collection.insertOne( jsonObj );
         return dbResult;
@@ -85,19 +97,20 @@ class MongoDBClient {
         return dbResult;
     }
 
-    async updateOne(collectionName, filter, jsonObj, createNew=false) {
-        if (createNew) {
-            filter = { _id: new ObjectId() };
-        }
-        // convert string id to mongo ObjectId
+    async updateOne(collectionName, filter, jsonObj) {
+        // Convertir string _id a ObjectId de MongoDB
         if (typeof filter._id === 'string') {
             filter._id = new ObjectId(filter._id);
         }
 
         const collection = this.database.collection(collectionName);
-        const dbResult = await collection.updateOne(filter, jsonObj, {upsert: createNew} );
-        return dbResult;
+        return await collection.updateOne(filter, { $set: jsonObj });
     }
+
+    async updateOneID(collectionName, objID, jsonObj) {
+        return await this.updateOne(collectionName, { _id: objID }, jsonObj);
+    }
+
 }
 
 export { MongoDBClient };

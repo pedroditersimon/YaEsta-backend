@@ -1,8 +1,9 @@
 // get database
-import { dbHandler, User } from "./db/DatabaseHandler.mjs";
+import { dbHandler } from "./db/DatabaseHandler.mjs";
+import { User } from "./models/models.mjs";
 
 // get pages
-import { registerHtml, loginHtml } from "./html_pages/html_pages.mjs";
+import { registerHtml, loginHtml } from "./HTMLPages/html_pages.mjs";
 
 import bcrypt from "bcryptjs";
 
@@ -26,6 +27,21 @@ class Auth {
     }
 }
 
+const removeCookie = (res) => {
+    res.cookie("auth_token", null, {
+        httpOnly: true,
+        maxAge: 1, // 1ms
+    });
+    return res;
+ }
+
+// ------------ logout ------------>
+const logout = async (req, res, next) => {
+    removeCookie(res);
+    return res.status(200).json({ message: `Logout!` });
+};
+router.route('/logout').get(logout); // GET
+
 // ------------ register ------------>
 const register = async (req, res, next) => {
     var { username, password, repeat_password } = req.fields;
@@ -47,7 +63,9 @@ const register = async (req, res, next) => {
     });
 
     // set in db
-    await dbHandler.register_user(user);
+    const result = await dbHandler.register_user(user);
+    if (!result.acknowledged)
+        return res.status(401).json({ message: `An registration error ocurred!` });
 
     // after registration -> login
     return login(req, res, next);
@@ -61,18 +79,19 @@ const login = async (req, res, next) => {
     var { username, password } = req.fields;
 
     // check password
-    if (password.length < 8) 
-        return res.status(401).json({ message: `Invalid password!` });
+    if (password.length < 8) {
+        return removeCookie(res).status(401).json({ message: `Invalid password!` });
+    }
 
     // get user from db
     var user = await dbHandler.get_user_by_name(username);
     if (!user.isValid()) 
-        return res.status(401).json({ message: `Invalid credentials!` });
+        return removeCookie(res).status(401).json({ message: `Invalid credentials!` });
 
     // check credentials
     var match = await bcrypt.compare(password, user.password);
     if (!match) 
-        return res.status(401).json({ message: `Invalid credentials!` });
+        return removeCookie(res).status(401).json({ message: `Invalid credentials!` });
 
 
     var auth = new Auth({
@@ -90,22 +109,12 @@ const login = async (req, res, next) => {
     });
     return res.status(200).json({ message: `Logged as ${username}!` });
 };
-router.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
+//router.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
 router.route('/login').post(login); // POST
 
 
-// ------------ logout ------------>
-const logout = async (req, res, next) => {
-    res.cookie("auth_token", null, {
-        httpOnly: true,
-        maxAge: 1, // 1ms
-    });
-    return res.status(200).json({ message: `Logout!` });
-};
-router.route('/logout').get(logout); // GET
-
 // ------------ token authentication middleware ------------>
-const verifyToken = (req, res, next) => {
+export const verifyToken = (req, res, next) => {
     var token = req.cookies.auth_token;
 
     if (!token) 
@@ -131,7 +140,7 @@ const verifyToken = (req, res, next) => {
 
 
 // ------------ user authentication ------------>
-const compareUserAuth = (req, user_id) => {
+export const compareUserAuth = (req, user_id) => {
     var auth = new Auth(req.auth);
 
     // invalid object
@@ -141,8 +150,14 @@ const compareUserAuth = (req, user_id) => {
     return auth._id == user_id;
 };
 
-const notAuthorizedError = (res) => {
+export const notAuthorizedError = (res) => {
     return res.status(401).json({ message: `Not Authorized` });
 };
 
-export { router, verifyToken, compareUserAuth, notAuthorizedError }
+// ------------ Warning middleware ------------>
+export const warningRoute = (req, res, next) => {
+    console.log("Warning: This API route is being accessed.");
+    return next();
+};
+
+export { router }
