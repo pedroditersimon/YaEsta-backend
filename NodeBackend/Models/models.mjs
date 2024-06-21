@@ -1,17 +1,14 @@
 
+
 export class User {
     _id = "";
     username = "";
     password = "";
 
-    // IDs list
-    subscribed_channels = [];
-
     constructor(data=null) {
         if (data)
             this.updateProperties(data);
     }
-
     updateProperties(data) {
         for (let key in this) {
             if (data.hasOwnProperty(key)) {
@@ -19,7 +16,6 @@ export class User {
             }
         }
     }
-
     isValid() {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }
@@ -28,6 +24,8 @@ export class User {
 export class Channel {
     _id = "";
     title = "";
+
+    creation_date = "";
 
     isPublic = false;
 
@@ -39,15 +37,10 @@ export class Channel {
     admins = [];
     adminsCount = 0;
 
-    // IDs list
-    events = [];
-    eventsCount = 0;
-
     constructor(data=null) {
         if (data)
             this.updateProperties(data);
     }
-
     updateProperties(data) {
         for (let key in this) {
             if (data.hasOwnProperty(key)) {
@@ -55,34 +48,48 @@ export class Channel {
             }
         }
     }
-
     isValid() {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }
 
     // mongo agregations pipeline
     static getPipeline() {
-        return [
+        return [ // you can add more stages here
             { 
                 $addFields: {
                     membersCount: { $size: "$members" },
-                    adminsCount: { $size: "$admins" },
-                    eventsCount: { $size: "$events" }
+                    adminsCount: { $size: "$admins" }
                 }
             }
         ];
     }
+
+    // remove properties before insert into db
+    removeCalculatedProps() {
+        var newChannel = new Channel(this);
+        delete newChannel.membersCount;
+        delete newChannel.adminsCount;
+        return newChannel;
+    }
+
 }
 
 export class ChannelEvent {
     _id = "";
     channel_id;
 
+    creation_date = "";
+
+    // pending, registered, completed
+    status = "";
+    action_date = "";
+
+    // pending, registered, completed
+    remidner_status = "";
+    reminder_time = "";
+
     title = "";
     description = "";
-
-    action_date;
-    notice_time;
 
     map_location;
 
@@ -90,7 +97,6 @@ export class ChannelEvent {
         if (data)
             this.updateProperties(data);
     }
-
     updateProperties(data) {
         for (let key in this) {
             if (data.hasOwnProperty(key)) {
@@ -98,7 +104,6 @@ export class ChannelEvent {
             }
         }
     }
-
     isValid() {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }

@@ -87,14 +87,41 @@ class MongoDBClient {
         return dbResult;
     }
 
-    async deleteOne(collectionName, objID) {
+    async deleteOne(collectionName, filter) {
+        // Convertir string _id a ObjectId de MongoDB
+        if (typeof filter._id === 'string') {
+            filter._id = new ObjectId(filter._id);
+        }
+
+        const collection = this.database.collection(collectionName);
+        const dbResult = await collection.deleteOne(filter);
+        return dbResult;
+    }
+
+    async deleteOneID(collectionName, objID) {
         // prevent wrong id
         if (objID.length != 24)
             return {};
 
+        return await this.deleteOne(collectionName, { "_id": objID });
+    }
+
+    async deleteMany(collectionName, filter) {
+        // Convertir string _id a ObjectId de MongoDB
+        if (typeof filter._id === 'string') {
+            filter._id = new ObjectId(filter._id);
+        }
+
         const collection = this.database.collection(collectionName);
-        const dbResult = await collection.deleteOne(  {"_id": new ObjectId(objID)}  );
+        const dbResult = await collection.deleteMany(filter);
         return dbResult;
+    }
+
+    async deleteManyIDs(collectionName, objIDs) {
+        if (objIDs.length <= 0 || objIDs == undefined)
+            return false;
+console.log(objIDs);
+        return await this.deleteMany(collectionName, { "_id": {$in: objIDs} });
     }
 
     async updateOne(collectionName, filter, jsonObj) {

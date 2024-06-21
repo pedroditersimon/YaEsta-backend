@@ -1,5 +1,5 @@
 import apiClient from "../../Services/ApiClient/apiClient.mjs";
-import { ChannelEvent } from "../ChannelEvents/ChannelEvent";
+import ChannelEventsList from "../ChannelEvents/ChannelEventsList.js";
 import { useState } from "react";
 
 import "./Channel.css";
@@ -39,19 +39,14 @@ export function Channel({ channel }) {
         <div className="channel">
             <div className="channel-info">
                 <p className="channel-id">ID: {channel._id}</p>
+                <p className="title">Creation Date: {channel.creation_date}</p>
                 <p className="channel-title">Title: {channel.title}</p>
                 <p className="channel-public">Public: {channel.isPublic ? 'Yes' : 'No'}</p>
                 <p className="channel-title">Members: {channel.membersCount}</p>
                 <p className="channel-events-title">Events ({channel.eventsCount}):</p>
             </div>
 
-            <ul className="channel-events-list">
-                {channel.events.map(event => (
-                    <li key={event} className="channel-event-item">
-                        <ChannelEvent channelEvent={{ _id: event }} />
-                    </li>
-                ))}
-            </ul>
+            <ChannelEventsList channel_id={channel._id} />
 
             <div className="list">
                 <button disabled={isLoading} className="delete-button" onClick={handleUnsubscribeClick}>De-subscribirse</button>

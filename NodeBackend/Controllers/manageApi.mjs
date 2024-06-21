@@ -1,18 +1,50 @@
 // get database
-import { dbHandler } from "./db/DatabaseHandler.mjs";
+import { dbHandler } from "../db/DatabaseHandler.mjs";
 
 // get models
-import { Channel, ChannelEvent } from "./models/models.mjs";
-import { ResponseChannel, ResponseChannelEvent } from "./ApiClient/responseModels.mjs";
+import { Channel, ChannelEvent } from "../models/models.mjs";
+import { ResponseChannel, ResponseChannelEvent } from "../ApiClient/responseModels.mjs";
 
 // get auth
 import { verifyToken, notAuthorizedError } from "./auth.mjs";
 // get pages
-import { createChannelHtml, createChannelEventHtml } from "./HTMLPages/html_pages.mjs";
+import { createChannelHtml, createChannelEventHtml } from "../HTMLPages/html_pages.mjs";
 
 import express from "express";
 const router = express.Router();
 
+/*
+[!] This controller is designed to be accessed by
+    the application's administration panel.
+*/
+
+// ------------ get channel events ------------>
+router.route('/channel/events').get( (req, res, next) => res.send('provide channel_id'));
+router.route('/channel/events/:channel_id').get( verifyToken, async (req, res, next) => {
+    var { channel_id } = req.params;
+    var auth = req.auth;
+
+    // get channel
+    var channel = await dbHandler.get_channel_by_id(channel_id);
+    if (!channel.isValid()) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+
+    // check if the user is member and admin of requested channel
+    var isAdmin = channel.admins.includes(auth._id);
+    var isMember = channel.members.includes(auth._id);
+    if (!isAdmin || !isMember)
+        return res.status(401).json({ message: `You need to be admin of the channel` });
+
+    // get events
+    var events = await dbHandler.get_events_by_channel_id(channel_id, 10);
+    if (!events) 
+        return res.status(404).json({ error: `No event found with id ${channel_id}`});
+
+    // transform the events to a ResponseModel
+    var resEvents = events.map(ev => new ResponseChannelEvent(ev));
+
+    res.status(200).send(resEvents);
+});
 
 // ------------ create new channel ------------>
 const createNewChannel = async (req, res, next) => {
@@ -24,6 +56,7 @@ const createNewChannel = async (req, res, next) => {
 
     // create a class object
     var newChannel = new Channel({
+        creation_date: new Date().toISOString(),
         title: title, 
         isPublic: isPublic,
 
@@ -43,7 +76,7 @@ const createNewChannel = async (req, res, next) => {
     res.status(200).send(resChannel);
 };
 router.route('/create/channel').get( (req, res, next) => res.send(createChannelHtml));
-router.route('/create/channel').put( verifyToken, createNewChannel);
+router.route('/create/channel').post( verifyToken, createNewChannel);
 
 
 // ------------ edit channel ------------>
@@ -51,10 +84,22 @@ const editChannel = async (req, res, next) => {
     var { channel_id, title } = req.fields;
     var auth = req.auth;
 
+    // get channel
+    var channel = await dbHandler.get_channel_by_id(channel_id);
+    if (!channel.isValid()) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+    
+    // check if the user is member and admin of requested channel
+    var isAdmin = channel.admins.includes(auth._id);
+    var isMember = channel.members.includes(auth._id);
+    if (!isAdmin || !isMember)
+        return res.status(401).json({ message: `You need to be admin of the channel` });
+        
+
     return res.status(404).json({ message: `Route is in construction...` });
 };
 router.route('/edit/channel').get( (req, res, next) => res.send('create channel'));
-router.route('/edit/channel').post( verifyToken, editChannel);
+router.route('/edit/channel').put( verifyToken, editChannel);
 
 // ------------ delete channel ------------>
 export const deleteChannel = async (req, res, next) => {
@@ -66,9 +111,10 @@ export const deleteChannel = async (req, res, next) => {
     if (!channel.isValid()) 
         return res.status(404).json({ message: `No channel found with id ${channel_id}` });
 
-    // check if the user is a admin of requested channel
+    // check if the user is member and admin of requested channel
     var isAdmin = channel.admins.includes(auth._id);
-    if (!isAdmin)
+    var isMember = channel.members.includes(auth._id);
+    if (!isAdmin || !isMember)
         return res.status(401).json({ message: `You need to be admin of the channel` });
     
     // TODO: dont delete, mark a property as deleted
@@ -92,15 +138,19 @@ const createNewEvent = async (req, res, next) => {
     if (!channel.isValid()) 
         return res.status(404).json({ message: `No channel found with id ${channel_id}` });
     
-    // check if the user is a admin of requested channel
+    // check if the user is member and admin of requested channel
     var isAdmin = channel.admins.includes(auth._id);
-    if (!isAdmin)
+    var isMember = channel.members.includes(auth._id);
+    if (!isAdmin || !isMember)
         return res.status(401).json({ message: `You need to be admin of the channel` });
     
     // create a class object
     var newEvent = new ChannelEvent({
+        creation_date: new Date().toISOString(),
+        
         title: title, 
-        channel_id: channel_id
+        channel_id: channel_id,
+        status: "pending"
     });
 
     // add the new channel in db
@@ -114,7 +164,7 @@ const createNewEvent = async (req, res, next) => {
     res.status(200).send(resEvent);
 };
 router.route('/create/event').get( (req, res, next) => res.send(createChannelEventHtml));
-router.route('/create/event').put( verifyToken, createNewEvent);
+router.route('/create/event').post( verifyToken, createNewEvent);
 
 
 // ------------ delete event ------------>
@@ -133,9 +183,10 @@ export const deleteEvent = async (req, res, next) => {
         return res.status(404).json({ message: `No channel found with id ${event.channel_id}` });
 
 
-    // check if the user is a admin of requested channel
+    // check if the user is member and admin of requested channel
     var isAdmin = channel.admins.includes(auth._id);
-    if (!isAdmin)
+    var isMember = channel.members.includes(auth._id);
+    if (!isAdmin || !isMember)
         return res.status(401).json({ message: `You need to be admin of the channel` });
     
     // TODO: dont delete, mark a property as deleted

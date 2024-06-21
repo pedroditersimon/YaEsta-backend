@@ -1,9 +1,9 @@
 // get database
-import { dbHandler } from "./db/DatabaseHandler.mjs";
-import { User } from "./models/models.mjs";
+import { dbHandler } from "../db/DatabaseHandler.mjs";
+import { User } from "../models/models.mjs";
 
 // get pages
-import { registerHtml, loginHtml } from "./HTMLPages/html_pages.mjs";
+import { registerHtml, loginHtml } from "../HTMLPages/html_pages.mjs";
 
 import bcrypt from "bcryptjs";
 

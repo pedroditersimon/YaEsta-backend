@@ -1,5 +1,5 @@
 // get database
-import { dbHandler } from "./db/DatabaseHandler.mjs";
+import { dbHandler } from "../db/DatabaseHandler.mjs";
 // get auth
 import { warningRoute, verifyToken, compareUserAuth, notAuthorizedError } from "./auth.mjs";
 
@@ -11,7 +11,10 @@ const router = express.Router();
 // TODO: Create admin endpoints
 
 
-
+/*
+[!] This controller is designed so that only administrators
+    of the development team can access it.
+*/
 
 // ------------ delete channel ------------>
 const deleteChannel = async (req, res, next) => {

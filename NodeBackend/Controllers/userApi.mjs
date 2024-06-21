@@ -1,9 +1,9 @@
 // get database
-import { dbHandler} from "./db/DatabaseHandler.mjs";
+import { dbHandler} from "../db/DatabaseHandler.mjs";
 
 // get models
-import {Channel, ChannelEvent } from "./models/models.mjs";
-import { ResponseChannel, ResponseChannelEvent } from "./ApiClient/responseModels.mjs";
+import {Channel, ChannelEvent } from "../models/models.mjs";
+import { ResponseChannel, ResponseChannelEvent } from "../ApiClient/responseModels.mjs";
 
 // get auth
 import { verifyToken, notAuthorizedError } from "./auth.mjs";
@@ -13,10 +13,14 @@ import { deleteChannel } from "./manageApi.mjs";
 import express from "express";
 const router = express.Router();
 
+/*
+[!] This controller is designed to be accessible by
+    any user (mostly normal users) of the application.
+*/
 
 // ------------ public channel search ------------>
 router.route('/channel/search').get((req, res, next) => res.send('provide channel_title'));
-router.route('/channel/search/:channel_title').get( /*verifyToken,*/ async (req, res) => {
+router.route('/channel/search/:channel_title').get( verifyToken, async (req, res) => {
     var { channel_title } = req.params;
 
     // get public channels
@@ -90,9 +94,9 @@ router.route('/event/:event_id').get( verifyToken, async (req, res, next) => {
 });
 
 
-// ------------ get channel events ------------>
-router.route('/channel/events').get( (req, res, next) => res.send('provide channel_id'));
-router.route('/channel/events/:channel_id').get( verifyToken, async (req, res, next) => {
+// ------------ get channel completed events ------------>
+router.route('/channel/completed_events').get( (req, res, next) => res.send('provide channel_id'));
+router.route('/channel/completed_events/:channel_id').get( verifyToken, async (req, res, next) => {
     var { channel_id } = req.params;
     var auth = req.auth;
 
@@ -111,7 +115,7 @@ router.route('/channel/events/:channel_id').get( verifyToken, async (req, res, n
     }
 
     // get events
-    var events = await dbHandler.get_events_by_channel_id(channel_id, 10);
+    var events = await dbHandler.get_completed_events_by_channel_id(channel_id, 10);
     if (!events) 
         return res.status(404).json({ error: `No event found with id ${channel_id}`});
 
@@ -121,11 +125,10 @@ router.route('/channel/events/:channel_id').get( verifyToken, async (req, res, n
     res.status(200).send(resEvents);
 });
 
-
 // ------------ subscribe user to channel ------------>
 router.route('/channel/subscribe').get( (req, res, next) => res.send('provide channel_id'));
-router.route('/channel/subscribe/:channel_id').get( verifyToken, async (req, res, next) => {
-    var { channel_id } = req.params;
+router.route('/channel/subscribe').post( verifyToken, async (req, res, next) => {
+    var { channel_id } = req.fields;
     var auth = req.auth;
 
     // get channel
@@ -133,17 +136,19 @@ router.route('/channel/subscribe/:channel_id').get( verifyToken, async (req, res
     if (!channel.isValid()) 
         return res.status(404).json({ error: `No channel found with id ${channel_id}`});
 
-    // [!] if channel is private -> needs authentication security
-    if (!channel.isPublic)
-    {
-        // TODO: you cannot subscribe a private channel with only id
-        // - implement a secret code or something
-    }
-
     // check if the user is already a member of requested channel
     var isMember = channel.members.includes(auth._id);
     if (isMember)
         return res.status(409).json({ error: 'User is already a member of the channel' });
+
+
+    var isAdmin = channel.admins.includes(auth._id);
+    // [!] if channel is private -> needs authentication security
+    if (!channel.isPublic && !isAdmin)
+    {
+        // TODO: you cannot subscribe a private channel with only id
+        return notAuthorizedError(res);
+    }
 
     var subscribed = await dbHandler.subscribe_user_to_channel(auth._id, channel_id);
     if (!subscribed) 
@@ -154,8 +159,8 @@ router.route('/channel/subscribe/:channel_id').get( verifyToken, async (req, res
 
 // ------------ unsubscribe user to channel ------------>
 router.route('/channel/unsubscribe').get( (req, res, next) => res.send('provide channel_id'));
-router.route('/channel/unsubscribe/:channel_id').get( verifyToken, async (req, res, next) => {
-    var { channel_id } = req.params;
+router.route('/channel/unsubscribe').post( verifyToken, async (req, res, next) => {
+    var { channel_id } = req.fields;
     var auth = req.auth;
 
     // get channel
@@ -168,9 +173,9 @@ router.route('/channel/unsubscribe/:channel_id').get( verifyToken, async (req, r
     if (!isMember)
         return res.status(409).json({ error: 'User isnt a member of the channel' });
 
-    // Delete private channels if the last member has unsubscribed
-    if (!channel.isPublic && channel.members.length <= 2)
-        return deleteChannel(req, res, next);
+    // TODO: Delete private channels if the last member has unsubscribed
+    if (!channel.isPublic && channel.members.length == 1) 
+        return res.status(409).json({ error: 'Last member cannot unsubscribe from a private channel' });
 
     var unsubscribed = await dbHandler.unsubscribe_user_from_channel(auth._id, channel_id);
     if (!unsubscribed) 

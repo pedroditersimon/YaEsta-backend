@@ -2,10 +2,10 @@
   "name": "node-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.mjs",
+  "main": "server.mjs",
   "scripts": {
-    "dev": "nodemon index.mjs",
-    "start": "node index.mjs"
+    "dev": "nodemon server.mjs",
+    "start": "node server.mjs"
   },
   "author": "",
   "license": "ISC",

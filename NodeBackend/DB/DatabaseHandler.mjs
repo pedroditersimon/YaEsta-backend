@@ -21,7 +21,8 @@ class DataBaseHandler {
         if (!(newChannel instanceof Channel))
             return new Channel();
 
-        var result = await this.mongoClient.insertOne("channels", newChannel);
+        const toSendChannel = newChannel.removeCalculatedProps();
+        var result = await this.mongoClient.insertOne("channels", toSendChannel);
         if (!result.acknowledged)
             return new Channel();
 
@@ -40,22 +41,15 @@ class DataBaseHandler {
         var channel = await this.get_channel_by_id(channel_id);
         if (!channel.isValid()) 
             return false;
-        
-        // unsubscribe all users
-        for (var i = 0; i < channel.members.length; i++) {
-            var user_id = channel.members[i];
-            await this.unsubscribe_user_from_channel(user_id, channel._id.toString());
-        }
 
         // delete all events
-        for (var i = 0; i < channel.events.length; i++) {
-            var event_id = channel.events[i];
-            await this.delete_event(event_id);
-        }
+        var channel_events = await this.get_events_by_channel_id(channel_id);
+        var channel_events_ids = channel_events.map((e)=>e._id);
+        await this.mongoClient.deleteManyIDs("events", channel_events_ids);
 
         // delete channel from db
-        var result = await this.mongoClient.deleteOne("channels", channel._id.toString());
-        return result.acknowledged;
+        var result = await this.mongoClient.deleteOneID("channels", channel._id.toString());
+        return result.acknowledged == true;
     }
 
 
@@ -69,42 +63,16 @@ class DataBaseHandler {
         var channel = await this.get_channel_by_id(channel_id);
         if (!channel.isValid()) 
             return false;
-
-        var index;
-
-        // remove from list
-        index = user.subscribed_channels.indexOf(channel_id);
-        if (index > -1)
-            user.subscribed_channels.splice(index, 1);
-
-        // remove from list
-        index = channel.members.indexOf(user_id);
+  
+        // remove user from channel members list
+        var index = channel.members.indexOf(user_id);
         if (index > -1)
             channel.members.splice(index, 1);
 
-        var insertObj =
-        [
-            { $set: {"subscribed_channels": user.subscribed_channels} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"subscribed_channels": user.subscribed_channels};
+        var insertObj = { "members": channel.members };
 
         // update in db
-        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj);
-        if (!result.acknowledged)
-            return false;
-
-        var insertObj =
-        [
-            { $set: {"members": channel.members} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"members": channel.members};
-
-        // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
+        var result = await this.mongoClient.updateOneID("channels", channel._id, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -123,37 +91,14 @@ class DataBaseHandler {
         if (!channel.isValid()) 
             return false;
 
-        // add to list, prevent duplicated
-        if (!user.subscribed_channels.includes(channel_id))
-            user.subscribed_channels.push(channel_id);
-
-        // add to list, prevent duplicated
+        // add user to the channel members list, prevent duplicated
         if (!channel.members.includes(user_id))
             channel.members.push(user_id);
 
-        var insertObj =
-        [
-            { $set: {"subscribed_channels": user.subscribed_channels} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"subscribed_channels": user.subscribed_channels};
+        var insertObj = { "members": channel.members };
 
         // update in db
-        var result = await this.mongoClient.updateOne("users", {_id:user._id}, insertObj);
-        if (!result.acknowledged)
-            return false;
-
-        var insertObj =
-        [
-            { $set: {"members": channel.members} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"members": channel.members};
-
-        // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
+        var result = await this.mongoClient.updateOneID("channels", channel._id, insertObj);
         if (!result.acknowledged)
             return false;
 
@@ -183,26 +128,6 @@ class DataBaseHandler {
         if (!event.isValid()) 
             return new ChannelEvent();
 
-        // already in, prevent duplicated
-        if (channel.events.includes(event_id))
-            return event;
-
-        // add to list
-        channel.events.push(event_id);
-
-        var insertObj =
-        [
-            { $set: {"events": channel.events} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"events": channel.events};
-
-        // update in db
-        var result = await this.mongoClient.updateOneID("channels", channel._id.toString(), insertObj);
-        if (!result.acknowledged)
-            return new ChannelEvent();
-
         return event;
     }
 
@@ -213,31 +138,8 @@ class DataBaseHandler {
         if (!event.isValid()) 
             return false;
         
-        // get channel
-        var channel = await this.get_channel_by_id(event.channel_id);
-        if (!channel.isValid()) 
-            return false;
-
-        // remove from list
-        var index = channel.events.indexOf(event_id);
-        if (index > -1)
-            channel.events.splice(index, 1);
-
-        var insertObj =
-        [
-            { $set: {"events": channel.events} },
-            { $unset: ["_id"] } // remove _id from setter
-        ];
-
-        insertObj = {"events": channel.events};
-
-        // update in db
-        var result = await this.mongoClient.updateOne("channels", {_id:channel._id}, insertObj);
-        if (!result.acknowledged)
-            return false;
-
         // delete event from db
-        var result = await this.mongoClient.deleteOne("events", event._id.toString());
+        var result = await this.mongoClient.deleteOneID("events", event_id);
         return result.acknowledged;
     }
 
@@ -263,11 +165,30 @@ class DataBaseHandler {
         return new ChannelEvent(rawEvent);
     }
 
+    async get_completed_events_by_channel_id(channel_id, count=20) {
+        const pipeline = [
+            {
+                $match: { $and: [
+                    { channel_id: channel_id },
+                    { status: "completed" }
+                ]}
+            },
+            // sort by lastest events
+            { $sort: { "action_date": -1 } },
+            { $limit: count },
+        ];
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
+
+        return docs.map((d) => new ChannelEvent(d));
+    }
+
     async get_events_by_channel_id(channel_id, count=20) {
         const pipeline = [
-            { 
-                $match: { channel_id: channel_id } 
+            {
+                $match: { channel_id: channel_id }
             },
+            // sort by lastest events
+            { $sort: { "action_date": -1 } },
             { $limit: count },
         ];
         const docs = await this.mongoClient.getAggregate("events", pipeline);
@@ -276,20 +197,17 @@ class DataBaseHandler {
     }
 
     async get_channels_by_user_id(user_id, count=20) {
-        // get subscribed_channels from user
+        /*
+        // get user
         var user = await this.get_user_by_id(user_id);
-        
-        // user not found, stop here
         if (!user.isValid())
             return null;
-
-        // convert string ids from ObjectId of mongo
-        var subscribed_channels = this.mongoClient.getObjectIdList(user.subscribed_channels);
-
+        */
+       
         // get every channel with maximum given count
         const pipeline = [
-            { 
-                $match: { _id: {$in: subscribed_channels} } 
+            {
+                $match: { members: {$in: [user_id]} } 
             },
             { $limit: count },
             ...Channel.getPipeline(),

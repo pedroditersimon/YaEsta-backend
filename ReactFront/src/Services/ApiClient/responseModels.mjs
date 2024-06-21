@@ -6,13 +6,11 @@ export class ResponseChannel {
     _id = "";
     title = "";
 
+    creation_date = "";
+
     isPublic = false;
 
     membersCount = 0;
-
-    // IDs list
-    events = [];
-    eventsCount = 0;
 
     constructor(data=null) {
         if (data)
@@ -36,6 +34,11 @@ export class ResponseChannel {
 export class ResponseChannelEvent {
     _id = "";
     channel_id = "";
+
+    creation_date = "";
+
+    // pending, registered, completed
+    status = "";
 
     title = "";
     description = "";

@@ -1,11 +1,11 @@
 
 
 Bug/Arreglar:
-- si un usuario tiene un id en subscribed channels pero en el channel no figura como miembro,
-    la api devuelve la info del channel igualmente (no deberia).
+
 
 TODO:
 - para chequear si un usuario esta en una lista usar alguna consulta de mongo (y en cualquier otro caso)
     enves de recuperar la lista enterea y usar el includes.
-- Eliminar algunas propiedades del responseChannel y event para canales privados, al devolver
+- Eliminar algunas propiedades al devolver el responseChannel y event para canales privados
     como memberCounts
+- Agregar roles de usuario y admin (administradores del equipo de desarrollo)
