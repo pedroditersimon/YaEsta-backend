@@ -1,9 +1,8 @@
 import { MongoDBClient } from "./MongoDBClient.mjs";
 
 // get models
-import { User, Channel, ChannelEvent } from "../models/models.mjs";
+import { User, Channel, ChannelEvent, AccessDocument } from "../models/models.mjs";
 import { ObjectId } from "mongodb";
-import { raw } from "express";
 
 
 class DataBaseHandler {
@@ -13,6 +12,119 @@ class DataBaseHandler {
         this.mongoClient = new MongoDBClient({databaseName: "YaEsta"});
     }
 
+    //region auth
+    // ------------ auth ------------>
+
+    async get_user_by_credentials(username, password) {
+        var rawUser = await this.mongoClient.findOneFrom("users", {
+            username: username,
+            password: password
+        });
+        return new User(rawUser);
+    }
+
+    async username_exists(username) {
+        var user = await this.get_user_by_name(username);
+        return user.isValid();
+    }
+
+    async register_user(user) {
+        var created_user = await this.mongoClient.insertOne("users", user);
+        return created_user;
+    }
+    //endregion
+
+
+    // ------------ getters ------------>
+
+    async get_user_by_name(username) {
+        var rawUser = await this.mongoClient.findOneFrom("users", {username: username});
+        return new User(rawUser);
+    }
+
+    async get_user_by_id(user_id) {
+        var rawUser = await this.mongoClient.findOneIDFrom("users", user_id);
+        return new User(rawUser);
+    }
+
+    async get_channel_by_id(channel_id) {
+        var rawChannel = await this.mongoClient.findOneIDFrom("channels", channel_id, Channel.getPipeline());
+        return new Channel(rawChannel);
+    }
+
+    async get_event_by_id(event_id) {
+        var rawEvent = await this.mongoClient.findOneIDFrom("events", event_id);
+        return new ChannelEvent(rawEvent);
+    }
+
+    async get_completed_events_by_channel_id(channel_id, count=20) {
+        const pipeline = [
+            {
+                $match: { $and: [
+                    { channel_id: channel_id },
+                    { status: "completed" }
+                ]}
+            },
+            { $limit: count },
+            // sort by lastest events
+            { $sort: { "action_date": -1 } },
+        ];
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
+
+        return docs.map((d) => new ChannelEvent(d));
+    }
+
+    async get_events_by_channel_id(channel_id, count=20) {
+        const pipeline = [
+            {
+                $match: { channel_id: channel_id }
+            },
+            { $limit: count },
+            // sort by lastest events
+            { $sort: { "action_date": -1 } },
+        ];
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
+
+        return docs.map((d) => new ChannelEvent(d));
+    }
+
+    async get_channels_by_user_id(user_id, count=20) {
+        /*
+        // get user
+        var user = await this.get_user_by_id(user_id);
+        if (!user.isValid())
+            return null;
+        */
+        
+        // get every channel with maximum count
+        const pipeline = [
+            {
+                $match: { members: {$in: [user_id]} } 
+            },
+            { $limit: count },
+            ...Channel.getPipeline(),
+        ];
+        const docs = await this.mongoClient.getAggregate("channels", pipeline);
+
+        return docs.map((d) => new Channel(d));
+    } 
+
+    async get_public_channels_by_title(channel_title, count=20) {
+        const pipeline = [
+            { 
+                $match: { 
+                    $and: [
+                        { title: { $regex: channel_title } },
+                        { isPublic: true }
+                ]}
+            },
+            { $limit: count },
+            ...Channel.getPipeline(),
+        ];
+        const docs = await this.mongoClient.getAggregate("channels", pipeline);
+        return docs.map((d) => new Channel(d));
+    } 
+
 
     // ------------ manage channels, events and users ------------>
     
@@ -21,14 +133,17 @@ class DataBaseHandler {
         if (!(newChannel instanceof Channel))
             return new Channel();
 
-        const toSendChannel = newChannel.removeCalculatedProps();
-        var result = await this.mongoClient.insertOne("channels", toSendChannel);
+        // create a Channel object to insert by copying the given one
+        const channelToInsert = new Channel(newChannel);
+        channelToInsert.removeCalculatedProps();
+        
+        var result = await this.mongoClient.insertOne("channels", channelToInsert);
         if (!result.acknowledged)
             return new Channel();
 
-        const channel_id = result.insertedId.toString();
+        const insertedId = result.insertedId.toString();
 
-        var channel = await this.get_channel_by_id(channel_id);
+        var channel = await this.get_channel_by_id(insertedId);
         if (!channel.isValid()) 
             return new Channel();
 
@@ -52,6 +167,24 @@ class DataBaseHandler {
         return result.acknowledged == true;
     }
 
+    /**
+     * Update a channel
+     * 
+     * [!] The received object could have some properties removed from Channel
+     * to avoid updating them. Ensure that only intended properties are updated
+     * in the access document.
+     * 
+     * @param {(Channel)} channel - The Channel object to insert.
+     * @returns {Promise<boolean>} Returns true if the update operation is acknowledged.
+     */
+    async update_channel(channel) {
+        // invalid given object
+        if (!(channel instanceof Channel))
+            return false;
+
+        const result = await this.mongoClient.updateOneID("channels", channel._id, channel);
+        return result.acknowledged == true;
+    }
 
     async unsubscribe_user_from_channel(user_id, channel_id) {
         // get user
@@ -108,7 +241,8 @@ class DataBaseHandler {
 
 
     async create_new_event(newEvent) {
-        // invalid given Event object
+        console.log(newEvent);
+        // invalid given object
         if (!(newEvent instanceof ChannelEvent))
             return new ChannelEvent();
 
@@ -121,10 +255,10 @@ class DataBaseHandler {
         if (!result.acknowledged)
             return new ChannelEvent();
 
-        const event_id = result.insertedId.toString();
+        const insertedId = result.insertedId.toString();
 
         // get created event
-        var event = await this.get_event_by_id(event_id);
+        var event = await this.get_event_by_id(insertedId);
         if (!event.isValid()) 
             return new ChannelEvent();
 
@@ -140,119 +274,133 @@ class DataBaseHandler {
         
         // delete event from db
         var result = await this.mongoClient.deleteOneID("events", event_id);
-        return result.acknowledged;
+        return result.acknowledged == true;
     }
 
-    // ------------ getters ------------>
+        /**
+     * Update a channel
+     * 
+     * [!] The received object could have some properties removed from Channel
+     * to avoid updating them. Ensure that only intended properties are updated
+     * in the access document.
+     * 
+     * @param {(Channel)} channel - The Channel object to insert.
+     * @returns {Promise<boolean>} Returns true if the update operation is acknowledged.
+     */
+    async update_event(event) {
+        // invalid given object
+        if (!(event instanceof ChannelEvent))
+            return false;
 
-    async get_user_by_name(username) {
-        var rawUser = await this.mongoClient.findOneFrom("users", {username: username});
-        return new User(rawUser);
+        const result = await this.mongoClient.updateOneID("events", event._id, event);
+        return result.acknowledged == true;
     }
 
-    async get_user_by_id(user_id) {
-        var rawUser = await this.mongoClient.findOneIDFrom("users", user_id);
-        return new User(rawUser);
+    //region AccessDocument
+    // ------------ Access Document ------------>
+
+    async get_access_document_by_id(access_document_id) {
+        const doc = await this.mongoClient.findOneIDFrom("accessDocuments", access_document_id);
+        return new AccessDocument(doc);
     }
 
-    async get_channel_by_id(channel_id) {
-        var rawChannel = await this.mongoClient.findOneIDFrom("channels", channel_id, Channel.getPipeline());
-        return new Channel(rawChannel);
+    async get_access_documents_by_channel_id(channel_id, count=20) {
+        const pipeline = [
+            {
+                $match: { target_channel_id: channel_id }
+            },
+            { $limit: count },
+            // sort by creation date
+            { $sort: { "creation_date": -1 } },
+        ];
+        const docs = await this.mongoClient.getAggregate("accessDocuments", pipeline);
+
+        return docs.map((d) => new AccessDocument(d));
     }
 
-    async get_event_by_id(event_id) {
-        var rawEvent = await this.mongoClient.findOneIDFrom("events", event_id);
-        return new ChannelEvent(rawEvent);
+    async get_access_documents_by_creator_id(creator_id, count=20) {
+        const pipeline = [
+            {
+                $match: { creator_user_id: creator_id }
+            },
+            { $limit: count },
+            // sort by creation date
+            { $sort: { "creation_date": -1 } },
+        ];
+        const docs = await this.mongoClient.getAggregate("accessDocuments", pipeline);
+
+        return docs.map((d) => new AccessDocument(d));
     }
 
-    async get_completed_events_by_channel_id(channel_id, count=20) {
+    async get_create_access_documents_by_creator_id(creator_id, count=20) {
         const pipeline = [
             {
                 $match: { $and: [
-                    { channel_id: channel_id },
-                    { status: "completed" }
-                ]}
-            },
-            // sort by lastest events
-            { $sort: { "action_date": -1 } },
-            { $limit: count },
-        ];
-        const docs = await this.mongoClient.getAggregate("events", pipeline);
-
-        return docs.map((d) => new ChannelEvent(d));
-    }
-
-    async get_events_by_channel_id(channel_id, count=20) {
-        const pipeline = [
-            {
-                $match: { channel_id: channel_id }
-            },
-            // sort by lastest events
-            { $sort: { "action_date": -1 } },
-            { $limit: count },
-        ];
-        const docs = await this.mongoClient.getAggregate("events", pipeline);
-
-        return docs.map((d) => new ChannelEvent(d));
-    }
-
-    async get_channels_by_user_id(user_id, count=20) {
-        /*
-        // get user
-        var user = await this.get_user_by_id(user_id);
-        if (!user.isValid())
-            return null;
-        */
-       
-        // get every channel with maximum given count
-        const pipeline = [
-            {
-                $match: { members: {$in: [user_id]} } 
-            },
-            { $limit: count },
-            ...Channel.getPipeline(),
-        ];
-        const docs = await this.mongoClient.getAggregate("channels", pipeline);
-
-        return docs.map((d) => new Channel(d));
-    } 
-
-    async get_public_channels_by_title(channel_title, count=20) {
-        const pipeline = [
-            { 
-                $match: { 
-                    $and: [
-                        { title: { $regex: channel_title } },
-                        { isPublic: true }
+                    { action_type: "create" },
+                    { creator_user_id: creator_id }
                 ]}
             },
             { $limit: count },
-            ...Channel.getPipeline(),
+            // sort by creation date
+            { $sort: { "creation_date": -1 } },
         ];
-        const docs = await this.mongoClient.getAggregate("channels", pipeline);
-        return docs.map((d) => new Channel(d));
-    } 
+        const docs = await this.mongoClient.getAggregate("accessDocuments", pipeline);
 
-
-    // ------------ auth ------------>
-
-    async get_user_by_credentials(username, password) {
-        var rawUser = await this.mongoClient.findOneFrom("users", {
-            username: username,
-            password: password
-        });
-        return new User(rawUser);
+        return docs.map((d) => new AccessDocument(d));
     }
 
-    async username_exists(username) {
-        var user = await this.get_user_by_name(username);
-        return user.isValid();
+    async create_new_access_document(newAccessDocument) {
+        // invalid given object
+        if (!(newAccessDocument instanceof AccessDocument))
+            return new AccessDocument();
+
+        var result = await this.mongoClient.insertOne("accessDocuments", newAccessDocument);
+        if (!result.acknowledged)
+            return new AccessDocument();
+
+        const insertedId = result.insertedId.toString();
+
+        // get created document
+        var accessDocument = await this.get_access_document_by_id(insertedId);
+        if (!accessDocument.isValid()) 
+            return new AccessDocument();
+
+        return accessDocument;
+    }
+    
+    // TODO: dont delete, mark a property as deleted
+    async delete_access_document(access_document_id) {
+        // get document
+        var accessDocument = await this.get_access_document_by_id(access_document_id);
+        if (!accessDocument.isValid()) 
+            return false;
+
+        // delete channel from db
+        var result = await this.mongoClient.deleteOneID("accessDocuments", access_document_id);
+        return result.acknowledged == true;
     }
 
-    async register_user(user) {
-        var created_user = await this.mongoClient.insertOne("users", user);
-        return created_user;
+
+    /**
+     * Update an Access Document
+     * 
+     * [!] The received object could have some properties removed from AccessDocument
+     * to avoid updating them. Ensure that only intended properties are updated
+     * in the access document.
+     * 
+     * @param {(AccessDocument)} accessDocument - The AccessDocument object to insert.
+     * @returns {Promise<boolean>} Returns true if the update operation is acknowledged.
+     */
+    async update_access_document(accessDocument) {
+        // invalid given object
+        if (!(accessDocument instanceof AccessDocument))
+            return false;
+
+        const result = await this.mongoClient.updateOneID("accessDocuments", accessDocument._id, accessDocument);
+        return result.acknowledged == true;
     }
+
+
 }
 
 // connect database

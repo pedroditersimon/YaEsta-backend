@@ -9,7 +9,7 @@ app.use(express.json());
 // CORS
 import cors from "cors";
 app.use(cors({
-  origin: ['http://localhost:3000'], // Replace with your frontend domain
+  origin: ['http://localhost:3000',], // Replace with your frontend domain
   credentials: true, // Enable cookies and HTTP authentication
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -19,11 +19,13 @@ app.use(morgan("dev"));
 import cookieParser from "cookie-parser";
 app.use(cookieParser());
 
+/*
 // parse form
   //req.fields contains non-file fields 
   //req.files contains files 
 import formidableMiddleware from 'express-formidable';
 app.use(formidableMiddleware());
+*/
 
 // auth
 import { router as authRouter } from "./Controllers/auth.mjs";
@@ -33,13 +35,19 @@ app.use("/", authRouter);
 import { router as adminApiRouter } from "./Controllers/adminApi.mjs";
 app.use("/admin/", adminApiRouter);
 
-// User role api
-import { router as userApiRouter } from "./Controllers/userApi.mjs";
-app.use("/", userApiRouter);
+// Channels routes
+import { router as channelsRouter } from "./Controllers/channels.mjs";
+app.use("/", channelsRouter);
 
-// Manage api
-import { router as manageApiRouter } from "./Controllers/manageApi.mjs";
-app.use("/", manageApiRouter);
+// Events routes
+import { router as eventsRouter } from "./Controllers/events.mjs";
+app.use("/", eventsRouter);
+
+// AccessDocuments routes
+import { router as accessDocumentsRouter } from "./Controllers/accessDocuments.mjs";
+app.use("/", accessDocumentsRouter);
+
+
 
 const server = app.listen(port, async () => {
   console.log(`Example app listening at http://localhost:${port}`)

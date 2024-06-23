@@ -2,9 +2,6 @@
 import { dbHandler } from "../db/DatabaseHandler.mjs";
 import { User } from "../models/models.mjs";
 
-// get pages
-import { registerHtml, loginHtml } from "../HTMLPages/html_pages.mjs";
-
 import bcrypt from "bcryptjs";
 
 import jwt from "jsonwebtoken"
@@ -40,19 +37,23 @@ const logout = async (req, res, next) => {
     removeCookie(res);
     return res.status(200).json({ message: `Logout!` });
 };
-router.route('/logout').get(logout); // GET
+router.route('/logout').post(logout); // GET
 
 // ------------ register ------------>
 const register = async (req, res, next) => {
-    var { username, password, repeat_password } = req.fields;
+    var { username, password, repeat_password } = req.body;
 
     // check password
     if (password.length < 8 || password != repeat_password) 
-        return res.status(401).json({ message: `Invalid password!` });
+        return res.status(400).json({ error: `Invalid password!` });
+
+    if (username.length < 4)
+        return res.status(400).json({ error: `Username too short!` });
 
     // check user exists
-    if (await dbHandler.username_exists(username)) 
-        return res.status(401).json({ message: `username already in use!` });
+    var usernameExists = await dbHandler.username_exists(username);
+    if (usernameExists) 
+        return res.status(409).json({ error: `username already in use!` });
 
     var hash = await bcrypt.hash(password, 10);
 
@@ -65,18 +66,17 @@ const register = async (req, res, next) => {
     // set in db
     const result = await dbHandler.register_user(user);
     if (!result.acknowledged)
-        return res.status(401).json({ message: `An registration error ocurred!` });
+        return res.status(409).json({ message: `An registration error ocurred!` });
 
     // after registration -> login
     return login(req, res, next);
 };
-router.route('/register').get((req, res, next) => res.send(registerHtml)); // GET
 router.route('/register').post(register); // POST
 
 
 // ------------ login ------------>
 const login = async (req, res, next) => {
-    var { username, password } = req.fields;
+    var { username, password } = req.body;
 
     // check password
     if (password.length < 8) {
@@ -109,7 +109,6 @@ const login = async (req, res, next) => {
     });
     return res.status(200).json({ message: `Logged as ${username}!` });
 };
-//router.route('/login').get((req, res, next) => res.send(loginHtml)); // GET
 router.route('/login').post(login); // POST
 
 

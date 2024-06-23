@@ -25,13 +25,14 @@ export class ApiClient {
      * @returns {Promise<Boolean>} A promise that resolves with the registration response.
      */
     async register(username, password, repeat_password) {
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
-        formData.append('repeat_password', repeat_password);
+        const body = {
+            'username': username,
+            'password': password,
+            'repeat_password': repeat_password
+        };
 
         try {
-            const response = await doFetch(this.baseURL, `/register`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/register`, "POST", body);
             return response.ok;
         } catch (err) {
             console.error(err);
@@ -47,12 +48,13 @@ export class ApiClient {
      * @returns {Promise<Boolean>} A promise that resolves with the login response.
      */
     async login(username, password) {
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
+        const body = {
+            'username': username,
+            'password': password,
+        };
 
         try {
-            const response = await doFetch(this.baseURL, `/login`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/login`, "POST", body);
             return response.ok;
         } catch (err) {
             console.error(err);
@@ -70,7 +72,7 @@ export class ApiClient {
      */
     async getPublicChannels(channelName) {
         try {
-            const response = await doFetch(this.baseURL, `/channel/search/${channelName}`);
+            const response = await doFetch(this.baseURL, `/channels/search/${channelName}`);
             const data = await response.json();
             return data.map(c => new ResponseChannel(c));
         } catch (err) {
@@ -88,7 +90,7 @@ export class ApiClient {
      */
     async getChannelByID(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/channel/${channelID}`);
+            const response = await doFetch(this.baseURL, `/channels/${channelID}`);
             const data = await response.json();
             return new ResponseChannel(data);
         } catch (err) {
@@ -105,7 +107,7 @@ export class ApiClient {
      */
     async getEventByID(eventID) {
         try {
-            const response = await doFetch(this.baseURL, `/event/${eventID}`);
+            const response = await doFetch(this.baseURL, `/events/${eventID}`);
             const data = await response.json();
             return new ResponseChannelEvent(data);
         } catch (err) {
@@ -122,7 +124,7 @@ export class ApiClient {
      */
     async getChannelCompletedEvents(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/channel/completed_events/${channelID}`);
+            const response = await doFetch(this.baseURL, `/channels/completed_events/${channelID}`);
             const data = await response.json();
             return data.map(ev => new ResponseChannelEvent(ev));
         } catch (err) {
@@ -138,12 +140,9 @@ export class ApiClient {
      * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the subscription was successful.
      */
     async subscribeToChannel(channelID) {
-        const formData = new FormData();
-        formData.append('channel_id', channelID);
-
         try {
             // Make a fetch request to subscribe to the channel
-            const response = await doFetch(this.baseURL, `/channel/subscribe`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/channels/subscribe/${channelID}`, "POST");
             // Return a boolean indicating whether the subscription was successful
             return response.ok;
         } catch (err) {
@@ -160,12 +159,9 @@ export class ApiClient {
      * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the unsubscription was successful.
      */
     async unsubscribeFromChannel(channelID) {
-        const formData = new FormData();
-        formData.append('channel_id', channelID);
-
         try {
             // Make a fetch request to unsubscribe from the channel
-            const response = await doFetch(this.baseURL, `/channel/unsubscribe`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/channels/unsubscribe/${channelID}`, "POST");
             // Return a boolean indicating whether the unsubscription was successful
             return response.ok;
         } catch (err) {
@@ -183,7 +179,7 @@ export class ApiClient {
      */
     async getUserChannels() {
         try {
-            const response = await doFetch(this.baseURL, `/user_channels/`);
+            const response = await doFetch(this.baseURL, `/user_channels`);
             const data = await response.json();
             return data.map(c => new ResponseChannel(c));
         } catch (err) {
@@ -202,7 +198,7 @@ export class ApiClient {
      */
     async getChannelEvents(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/channel/events/${channelID}`);
+            const response = await doFetch(this.baseURL, `/channels/events/${channelID}`);
             const data = await response.json();
             return data.map(ev => new ResponseChannelEvent(ev));
         } catch (err) {
@@ -219,12 +215,15 @@ export class ApiClient {
      * @returns {Promise<ResponseChannel>} A promise that resolves with the created channel.
      */
     async createNewChannel(title, isPublic) {
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('isPublic', isPublic);
+        const body = {
+            'channel': {
+                'title': title,
+                'isPublic': isPublic
+            }
+        };
 
         try {
-            const response = await doFetch(this.baseURL, `/create/channel`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/channels/create`, "POST", body);
             const data = await response.json();
             return new ResponseChannel(data);
         } catch (err) {
@@ -241,12 +240,15 @@ export class ApiClient {
      * @returns {Promise<ResponseChannel>} A promise that resolves with the edited channel.
      */
     async editChannel(channelID, newTitle) {
-        const formData = new FormData();
-        formData.append('channel_id', channelID);
-        formData.append('title', newTitle);
+        const body = {
+            'channel': {
+                'channel_id': channelID,
+                'title': newTitle
+            }
+        };
 
         try {
-            const response = await doFetch(this.baseURL, `/edit/channel`, "PUT", formData);
+            const response = await doFetch(this.baseURL, `/channels/edit`, "PUT", body);
             const data = await response.json();
             return new ResponseChannel(data);
         } catch (err) {
@@ -263,7 +265,7 @@ export class ApiClient {
      */
     async deleteChannel(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/delete/channel/${channelID}`, "DELETE");
+            const response = await doFetch(this.baseURL, `/channels/delete/${channelID}`, "DELETE");
             return response.ok;
         } catch (err) {
             console.error(err);
@@ -279,12 +281,15 @@ export class ApiClient {
      * @returns {Promise<ResponseChannelEvent>} A promise that resolves with the created event.
      */
     async createNewEvent(channelID, eventTitle) {
-        const formData = new FormData();
-        formData.append('channel_id', channelID);
-        formData.append('title', eventTitle);
+        const body = {
+            'event': {
+                'channel_id': channelID,
+                'title': eventTitle
+            }
+        };
 
         try {
-            const response = await doFetch(this.baseURL, `/create/event`, "POST", formData);
+            const response = await doFetch(this.baseURL, `/events/create`, "POST", body);
             const data = await response.json();
             return new ResponseChannelEvent(data);
         } catch (err) {
@@ -301,7 +306,7 @@ export class ApiClient {
      */
     async deleteEvent(eventID) {
         try {
-            const response = await doFetch(this.baseURL, `/delete/event/${eventID}`, "DELETE");
+            const response = await doFetch(this.baseURL, `/events/delete/${eventID}`, "DELETE");
             return response.ok;
         } catch (err) {
             console.error(err);

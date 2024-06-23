@@ -29,7 +29,6 @@ const deleteChannel = async (req, res, next) => {
 
     res.status(200).send(deleted);
 };
-router.route('/delete/channel').get( (req, res, next) => res.send('delete channel'));
 router.route('/delete/channel/:channel_id').delete( verifyToken, warningRoute, deleteChannel);
 
 export { router }

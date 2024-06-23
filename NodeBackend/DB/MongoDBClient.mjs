@@ -120,7 +120,7 @@ class MongoDBClient {
     async deleteManyIDs(collectionName, objIDs) {
         if (objIDs.length <= 0 || objIDs == undefined)
             return false;
-console.log(objIDs);
+
         return await this.deleteMany(collectionName, { "_id": {$in: objIDs} });
     }
 
@@ -129,6 +129,10 @@ console.log(objIDs);
         if (typeof filter._id === 'string') {
             filter._id = new ObjectId(filter._id);
         }
+
+        // remove _id property to prevent update it
+        if (jsonObj._id !== undefined)
+            delete jsonObj._id;
 
         const collection = this.database.collection(collectionName);
         return await collection.updateOne(filter, { $set: jsonObj });

@@ -1,7 +1,5 @@
 
-
 Bug/Arreglar:
-
 
 TODO:
 - para chequear si un usuario esta en una lista usar alguna consulta de mongo (y en cualquier otro caso)
@@ -9,3 +7,15 @@ TODO:
 - Eliminar algunas propiedades al devolver el responseChannel y event para canales privados
     como memberCounts
 - Agregar roles de usuario y admin (administradores del equipo de desarrollo)
+- En los controladores de editar documento, solo Actualizar los campos que se incluyen en el body
+    por ejemplo, si el campo de title no esta, este campo no sera modificado
+    Especificar esto en la documentacion
+- Crear funcionalidad para agregar admins a un canal,
+    la lista de admins es visible para todos los admins del canal
+    teniendo la opcion de hechar a otros
+    aunque un admin no sea miembro (se desubscribió) sigue siendo listado en la lista de admins
+- Reemplazar todos los endpoint de funcion flecha por funcion definida
+- Organizar DatabaseHandler
+
+- Accionar la creacion de canal
+- Hacer el front para manejar los acces documents

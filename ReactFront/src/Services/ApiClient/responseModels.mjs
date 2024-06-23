@@ -2,6 +2,7 @@
 // ------------ Response models ------------>
 // used to remove internal information from response objects, contains only necessary data
 
+
 export class ResponseChannel {
     _id = "";
     title = "";
@@ -16,7 +17,6 @@ export class ResponseChannel {
         if (data)
             this.updateProperties(data);
     }
-
     updateProperties(data) {
         for (let key in this) {
             if (data.hasOwnProperty(key)) {
@@ -24,7 +24,6 @@ export class ResponseChannel {
             }
         }
     }
-
     isValid() {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }
@@ -39,20 +38,22 @@ export class ResponseChannelEvent {
 
     // pending, registered, completed
     status = "";
+    action_date = "";
+
+    // pending, registered, completed
+    reminder_status = "";
+    reminder_time = "";
 
     title = "";
     description = "";
 
-    action_date;
-    notice_time;
-
     map_location;
+
 
     constructor(data=null) {
         if (data)
             this.updateProperties(data);
     }
-
     updateProperties(data) {
         for (let key in this) {
             if (data.hasOwnProperty(key)) {
@@ -60,7 +61,6 @@ export class ResponseChannelEvent {
             }
         }
     }
-
     isValid() {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }

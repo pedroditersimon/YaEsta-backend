@@ -1,4 +1,8 @@
 
+export function isValidID(_id) {
+    return _id !== undefined && _id !== null && _id !== "";
+}
+
 
 export class User {
     _id = "";
@@ -16,9 +20,7 @@ export class User {
             }
         }
     }
-    isValid() {
-        return this._id !== undefined && this._id !== null && this._id !== "";
-    }
+    isValid() { return isValidID(this._id); }
 }
 
 export class Channel {
@@ -48,9 +50,7 @@ export class Channel {
             }
         }
     }
-    isValid() {
-        return this._id !== undefined && this._id !== null && this._id !== "";
-    }
+    isValid() { return isValidID(this._id); }
 
     // mongo agregations pipeline
     static getPipeline() {
@@ -66,10 +66,8 @@ export class Channel {
 
     // remove properties before insert into db
     removeCalculatedProps() {
-        var newChannel = new Channel(this);
-        delete newChannel.membersCount;
-        delete newChannel.adminsCount;
-        return newChannel;
+        delete this.membersCount;
+        delete this.adminsCount;
     }
 
 }
@@ -80,13 +78,13 @@ export class ChannelEvent {
 
     creation_date = "";
 
-    // pending, registered, completed
+    // 'pending', 'registered', 'completed'
     status = "";
     action_date = "";
 
-    // pending, registered, completed
-    remidner_status = "";
-    reminder_time = "";
+    // 'pending', 'registered', 'completed'
+    reminder_status = "";
+    reminder_date = "";
 
     title = "";
     description = "";
@@ -104,7 +102,63 @@ export class ChannelEvent {
             }
         }
     }
-    isValid() {
-        return this._id !== undefined && this._id !== null && this._id !== "";
+    isValid() { return isValidID(this._id); }
+}
+
+
+export class AccessDocument {
+    _id = "";
+
+    creator_user_id = "";
+    creation_date = "";
+
+    enabled = true;
+
+    requires_approval = false;
+    pending_approval = {}; // { user_id: '', requestDate: '' }
+
+    // 'subscribe' or 'create'
+    action_type = "subscribe";
+
+    target_channel_id = "";
+
+    channel_title_template = "New Channel {index}";
+    created_channels = []; // { user_id: channel_id }
+
+    constructor(data=null) {
+        if (data)
+            this.updateProperties(data);
+    }
+    updateProperties(data) {
+        for (let key in this) {
+            if (data.hasOwnProperty(key)) {
+                this[key] = data[key];
+            }
+        }
+    }
+    isValid() { return isValidID(this._id); }
+
+    generate_title() {
+        return this.formatDate(this.channel_title_template)
+            // index 
+            .replace("{index}", this.created_channels.length)
+    }
+
+    formatDate(template) {
+        const date = new Date();
+
+        const minutes = date.getMinutes();
+        const hours = date.getHours();
+
+        const day = date.getDate();
+        const month = date.getMonth() + 1; // months in JavaScript are 0-11
+        const year = date.getFullYear();
+
+        return template
+            .replace("{minutes}", minutes)
+            .replace("{hours}", hours)
+            .replace("{day}", day)
+            .replace("{month}", month)
+            .replace("{year}", year);
     }
 }
