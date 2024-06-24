@@ -10,15 +10,12 @@ import { verifyToken, notAuthorizedError } from "./auth.mjs";
 
 import { checkAdminAndMemberChannel, checkMemberChannel, checkAdminChannel } from "../Utils/utils.mjs";
 
-
 import express from "express";
 const router = express.Router();
 
-
-
 // ------------ get channel events ------------>
-router.route('/channels/events/:channel_id').get( verifyToken, getChannelEvents);
-export async function getChannelEvents(req, res, next) {
+router.route('/events/channel/:channel_id').get( verifyToken, getEventsByChannelID);
+export async function getEventsByChannelID(req, res, next) {
     var { channel_id } = req.params;
     var auth = req.auth;
 
@@ -42,7 +39,6 @@ export async function getChannelEvents(req, res, next) {
 
     res.status(200).send(resEvents);
 };
-
 
 // ------------ get event by id ------------>
 router.route('/events/:event_id').get( verifyToken, getEventById);
@@ -71,10 +67,9 @@ export async function getEventById(req, res, next) {
     res.status(200).send(resEvent);
 };
 
-
 // ------------ get completed events of a channel ------------>
-router.route('/channels/completed_events/:channel_id').get( verifyToken, getCompletedChennelEvents);
-export async function getCompletedChennelEvents(req, res, next) {
+router.route('/events/completed/channel/:channel_id').get( verifyToken, getCompletedEventsByChannelID);
+export async function getCompletedEventsByChannelID(req, res, next) {
     var { channel_id } = req.params;
     var auth = req.auth;
 
@@ -135,7 +130,6 @@ export async function createNewEvent (req, res, next) {
     res.status(200).send(resEvent);
 };
 
-
 // ------------ edit channel ------------>
 router.route('/events/edit').put( verifyToken, editEvent);
 export async function editEvent(req, res, next) {
@@ -172,7 +166,6 @@ export async function editEvent(req, res, next) {
     var updated = await dbHandler.update_event(documentToInsert);
     res.status(200).send(updated);
 };
-
 
 // ------------ delete event ------------>
 router.route('/events/delete/:event_id').delete( verifyToken, deleteEvent);

@@ -29,6 +29,22 @@ export async function getPublicChannels(req, res, next) {
     res.status(200).send(resChannels);
 }
 
+// ------------ get logged user channels ------------>
+router.route('/channels/user').get( verifyToken, getUserChannels);
+export async function getUserChannels(req, res, next) {
+    var auth = req.auth;
+
+    // get channels
+    var channels = await dbHandler.get_channels_by_user_id(auth._id);
+    if (!channels) 
+        return res.status(404).json({error:`No user found with id ${auth._id}`});
+
+    // transform the channels to a ResponseModel
+    var resChannels = channels.map(c => new ResponseChannel(c));
+
+    res.status(200).send(resChannels);
+}
+
 // ------------ get channel by id ------------>
 router.route('/channels/:channel_id').get( verifyToken, getChannelById);
 export async function getChannelById(req, res, next) {
@@ -54,82 +70,6 @@ export async function getChannelById(req, res, next) {
 
     res.status(200).send(resChannel);
 }
-
-// ------------ subscribe user to channel ------------>
-router.route('/channels/subscribe/:channel_id').post( verifyToken, subscribeUserToChannel);
-export async function subscribeUserToChannel(req, res, next) {
-    var { channel_id } = req.params;
-    var auth = req.auth;
-
-    // get channel
-    var channel = await dbHandler.get_channel_by_id(channel_id);
-    if (!channel.isValid()) 
-        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
-
-    // check if the user is already a member of requested channel
-    var isMember = await checkMemberChannel(auth._id, channel);
-    if (isMember)
-        return res.status(409).json({ error: 'User is already a member of the channel' });
-
-    // [!] if the channel is private, only admins can subscribe with the channel id
-    if (!channel.isPublic){
-        var isAdmin = await checkAdminChannel(auth._id, channel);
-        if(!isAdmin)
-            return notAuthorizedError(res);
-    } 
-
-    var subscribed = await dbHandler.subscribe_user_to_channel(auth._id, channel_id);
-    if (!subscribed) 
-        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
-
-    res.status(200).send(true);
-}
-
-// ------------ unsubscribe user to channel ------------>
-router.route('/channels/unsubscribe/:channel_id').post( verifyToken, unsubscribeUserToChannel);
-export async function unsubscribeUserToChannel(req, res, next) {
-    var { channel_id } = req.params;
-    var auth = req.auth;
-
-    // get channel
-    var channel = await dbHandler.get_channel_by_id(channel_id);
-    if (!channel.isValid()) 
-        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
-
-    // check if the user is a member of requested channel
-    var isMember = await checkMemberChannel(auth._id, channel);
-    if (!isMember)
-        return res.status(409).json({ error: 'User isnt a member of the channel' });
-
-    // TODO: Delete private channels if the last member has unsubscribed
-    if (!channel.isPublic && channel.members.length == 1) 
-        return res.status(409).json({ error: 'Last member cannot unsubscribe from a private channel' });
-
-    var unsubscribed = await dbHandler.unsubscribe_user_from_channel(auth._id, channel_id);
-    if (!unsubscribed) 
-        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
-
-    res.status(200).send(true);
-}
-
-
-// ------------ get logged user channels ------------>
-router.route('/user_channels').get( verifyToken, getLoggedUserChannels);
-export async function getLoggedUserChannels(req, res, next) {
-    var auth = req.auth;
-
-    // get channels
-    var channels = await dbHandler.get_channels_by_user_id(auth._id);
-    if (!channels) 
-        return res.status(404).json({error:`No user found with id ${auth._id}`});
-
-    // transform the channels to a ResponseModel
-    var resChannels = channels.map(c => new ResponseChannel(c));
-
-    res.status(200).send(resChannels);
-}
-
-
 
 
 // ------------ create new channel ------------>
@@ -164,8 +104,6 @@ export async function createNewChannel(req, res, next) {
     var resChannel = new ResponseChannel(channel);
     res.status(200).send(resChannel);
 };
-
-
 
 // ------------ edit channel ------------>
 router.route('/channels/edit').put( verifyToken, editChannel);
@@ -207,7 +145,6 @@ export async function editChannel(req, res, next) {
     res.status(200).send(updated);
 };
 
-
 // ------------ delete channel ------------>
 router.route('/channels/delete/:channel_id').delete( verifyToken, deleteChannel);
 export async function deleteChannel(req, res, next) {
@@ -230,5 +167,61 @@ export async function deleteChannel(req, res, next) {
     res.status(200).send(deleted);
 };
 
+// ------------ subscribe user to channel ------------>
+router.route('/channels/subscribe/:channel_id').post( verifyToken, subscribeToChannel);
+export async function subscribeToChannel(req, res, next) {
+    var { channel_id } = req.params;
+    var auth = req.auth;
+
+    // get channel
+    var channel = await dbHandler.get_channel_by_id(channel_id);
+    if (!channel.isValid()) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+
+    // check if the user is already a member of requested channel
+    var isMember = await checkMemberChannel(auth._id, channel);
+    if (isMember)
+        return res.status(409).json({ error: 'User is already a member of the channel' });
+
+    // [!] if the channel is private, only admins can subscribe with the channel id
+    if (!channel.isPublic){
+        var isAdmin = await checkAdminChannel(auth._id, channel);
+        if(!isAdmin)
+            return notAuthorizedError(res);
+    } 
+
+    var subscribed = await dbHandler.subscribe_user_to_channel(auth._id, channel_id);
+    if (!subscribed) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+
+    res.status(200).send(true);
+}
+
+// ------------ unsubscribe user to channel ------------>
+router.route('/channels/unsubscribe/:channel_id').post( verifyToken, unsubscribeFromChannel);
+export async function unsubscribeFromChannel(req, res, next) {
+    var { channel_id } = req.params;
+    var auth = req.auth;
+
+    // get channel
+    var channel = await dbHandler.get_channel_by_id(channel_id);
+    if (!channel.isValid()) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+
+    // check if the user is a member of requested channel
+    var isMember = await checkMemberChannel(auth._id, channel);
+    if (!isMember)
+        return res.status(409).json({ error: 'User isnt a member of the channel' });
+
+    // TODO: Delete private channels if the last member has unsubscribed
+    if (!channel.isPublic && channel.members.length == 1) 
+        return res.status(409).json({ error: 'Last member cannot unsubscribe from a private channel' });
+
+    var unsubscribed = await dbHandler.unsubscribe_user_from_channel(auth._id, channel_id);
+    if (!unsubscribed) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+
+    res.status(200).send(true);
+}
 
 export { router }

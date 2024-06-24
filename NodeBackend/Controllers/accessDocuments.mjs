@@ -16,8 +16,51 @@ const router = express.Router();
 */
 
 
+// ------------ get all Access Documents of a channel ------------>
+router.route('/access_documents/channel/:channel_id').get( verifyToken, getAccessDocumentsByChannelID);
+export async function getAccessDocumentsByChannelID(req, res, next) {
+    var { channel_id } = req.params;
+    var auth = req.auth;
+
+    // get channel
+    var channel = await dbHandler.get_channel_by_id(channel_id);
+    if (!channel.isValid()) 
+        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
+    
+    // check if the user is member and admin of requested channel
+    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
+    if (!isAdminAndMember)
+        return res.status(401).json({ message: `You need to be admin of the channel` });
+
+    var accessDocuments = await dbHandler.get_access_documents_by_channel_id(channel_id);
+    if (!accessDocuments) 
+        return res.status(404).json({ error: `No AccessDocument found with the channel id ${channel_id}`});
+
+    // transform the AccessDocuments to a ResponseModel
+    var resAccessDocuments = accessDocuments.map(c => new ResponseAccessDocument(c));
+
+    res.status(200).send(resAccessDocuments);
+};
+
+// ------------ get all create access documents created by a user ------------>
+router.route('/access_documents/user').get( verifyToken, getUserAccessDocuments);
+export async function getUserAccessDocuments(req, res, next) {
+    var { channel_id } = req.params;
+    var auth = req.auth;
+
+    var accessDocuments = await dbHandler.get_create_access_documents_by_creator_id(auth._id);
+    if (!accessDocuments) 
+        return res.status(404).json({ error: `No AccessDocument found with the channel id ${channel_id}`});
+
+    // transform the AccessDocuments to a ResponseModel
+    var resAccessDocuments = accessDocuments.map(c => new ResponseAccessDocument(c));
+
+    res.status(200).send(resAccessDocuments);
+};
+
 // ------------ get Access Document ------------>
-const getAccessDocument = async (req, res, next) => {
+router.route('/access_documents/:access_document_id').get( verifyToken, getAccessDocument);
+export async function getAccessDocument(req, res, next) {
     var { access_document_id } = req.params;
     var auth = req.auth;
 
@@ -45,56 +88,11 @@ const getAccessDocument = async (req, res, next) => {
 
     res.status(200).send(resAccessDocument);
 };
-router.route('/access_documents/:access_document_id').get( verifyToken, getAccessDocument);
-
-
-// ------------ get all Access Documents of a channel ------------>
-const getChannelAccessDocuments = async (req, res, next) => {
-    var { channel_id } = req.params;
-    var auth = req.auth;
-
-    // get channel
-    var channel = await dbHandler.get_channel_by_id(channel_id);
-    if (!channel.isValid()) 
-        return res.status(404).json({ error: `No channel found with id ${channel_id}`});
-    
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
-        return res.status(401).json({ message: `You need to be admin of the channel` });
-
-    var accessDocuments = await dbHandler.get_access_documents_by_channel_id(channel_id);
-    if (!accessDocuments) 
-        return res.status(404).json({ error: `No AccessDocument found with the channel id ${channel_id}`});
-
-    // transform the AccessDocuments to a ResponseModel
-    var resAccessDocuments = accessDocuments.map(c => new ResponseAccessDocument(c));
-
-    res.status(200).send(resAccessDocuments);
-};
-router.route('/access_documents/channel/:channel_id').get( verifyToken, getChannelAccessDocuments);
-
-
-// ------------ get all create access documents created by a user ------------>
-const getUserCreateAccessDocuments   = async (req, res, next) => {
-    var { channel_id } = req.params;
-    var auth = req.auth;
-
-    var accessDocuments = await dbHandler.get_create_access_documents_by_creator_id(auth._id);
-    if (!accessDocuments) 
-        return res.status(404).json({ error: `No AccessDocument found with the channel id ${channel_id}`});
-
-    // transform the AccessDocuments to a ResponseModel
-    var resAccessDocuments = accessDocuments.map(c => new ResponseAccessDocument(c));
-
-    res.status(200).send(resAccessDocuments);
-};
-router.route('/user/access_documents').get( verifyToken, getUserCreateAccessDocuments);
-
 
 
 // ------------ create Access Document ------------>
-const createAccessDocument = async (req, res, next) => {
+router.route('/access_documents/create').post( verifyToken, createAccessDocument);
+export async function createAccessDocument(req, res, next) {
     var auth = req.auth;
 
     var receivedObj = req.body.accessDocument;
@@ -138,12 +136,11 @@ const createAccessDocument = async (req, res, next) => {
 
     res.status(200).send(resAccessDocument);
 };
-router.route('/access_documents/create').post( verifyToken, createAccessDocument);
-
 
 // ------------ delete Access Document ------------>
 // TODO: dont delete, mark a property as deleted
-const deleteAccessDocument = async (req, res, next) => {
+router.route('/access_documents/delete/:access_document_id').delete( verifyToken, deleteAccessDocument);
+export async function deleteAccessDocument(req, res, next) {
     var { access_document_id } = req.params;
     var auth = req.auth;
 
@@ -171,11 +168,10 @@ const deleteAccessDocument = async (req, res, next) => {
 
     res.status(200).send(deleted);
 };
-router.route('/access_documents/delete/:access_document_id').delete( verifyToken, deleteAccessDocument);
-
 
 // ------------ edit Access Document ------------>
-const editAccessDocument = async (req, res, next) => {
+router.route('/access_documents/edit').put( verifyToken, editAccessDocument);
+export async function editAccessDocument(req, res, next) {
     var auth = req.auth;
 
     var givenId = req.body.accessDocument._id;
@@ -241,11 +237,10 @@ const editAccessDocument = async (req, res, next) => {
     var updated = await dbHandler.update_access_document(documentToInsert);
     res.status(200).send(updated);
 };
-router.route('/access_documents/edit').put( verifyToken, editAccessDocument);
-
 
 // ------------ trigger Access Document ------------>
-const triggerAccessDocument = async (req, res, next) => {
+router.route('/access_documents/trigger/:access_document_id').post( verifyToken, triggerAccessDocument);
+export async function triggerAccessDocument(req, res, next) {
     var { access_document_id } = req.params;
     var auth = req.auth;
 
@@ -275,7 +270,5 @@ const triggerAccessDocument = async (req, res, next) => {
 
     res.status(200).send(subscribed);
 };
-router.route('/access_documents/trigger/:access_document_id').post( verifyToken, triggerAccessDocument);
-
 
 export { router }

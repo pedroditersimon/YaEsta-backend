@@ -42,7 +42,7 @@ export class ResponseChannelEvent {
 
     // 'pending', 'registered', 'completed'
     reminder_status = "";
-    reminder_time = "";
+    reminder_date = "";
 
     title = "";
     description = "";
@@ -65,8 +65,6 @@ export class ResponseChannelEvent {
         return this._id !== undefined && this._id !== null && this._id !== "";
     }
 }
-
-
 
 
 export class ResponseAccessDocument {

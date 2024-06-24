@@ -7,17 +7,18 @@ import './ChannelEventsList.css';
 export default function ChannelEventsList({ channel_id, channel_events=[] }) {
     const [events, setEvents] = useState(channel_events);
 
-    useEffect(() => {
-        handleGetClick()
-    }, []);
 
     async function handleGetClick() {
         setEvents([]);
 
         // user must have to use getChannelCompletedEvents insted!
-        const result = await apiClient.getChannelEvents(channel_id);
+        const result = await apiClient.getEventsByChannelID(channel_id);
         setEvents(result);
     }
+
+    useEffect(() => {
+        handleGetClick()
+    }, []);
 
     return (
         <>

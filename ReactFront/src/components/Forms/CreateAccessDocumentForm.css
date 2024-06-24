@@ -1,4 +1,5 @@
-.auth-container {
+
+.create-access-document-container {
     font-family: Arial, sans-serif;
     color: #333;
     padding: 16px;
@@ -7,18 +8,19 @@
     border-radius: 5px;
     max-width: 400px;
     margin: 0 auto;
+    text-align: center;
 
     display: flex;
     flex-direction: column;
     text-align: left;
 }
 
-.auth-title {
+.create-access-document-title {
     font-size: 20px;
     margin-bottom: 16px;
 }
 
-.auth-input {
+.create-access-document-input {
     padding: 8px;
     font-size: 14px;
     border: 1px solid #ccc;
@@ -31,7 +33,19 @@
     margin-right: auto;
 }
 
-.auth-button {
+.create-access-document-label {
+    display: block;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #555;
+}
+
+
+.create-access-document-checkbox {
+    margin-right: 8px;
+}
+
+.create-access-document-button {
     background-color: #007BFF;
     color: white;
     border: none;
@@ -42,16 +56,16 @@
     transition: background-color 0.3s ease;
 }
 
-.auth-button:disabled {
+.create-access-document-button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
 }
 
-.auth-button:hover:not(:disabled) {
+.create-access-document-button:hover:not(:disabled) {
     background-color: #0056b3;
 }
 
-.auth-button:active:not(:disabled) {
+.create-access-document-button:active:not(:disabled) {
     background-color: #003f7f;
 }
 

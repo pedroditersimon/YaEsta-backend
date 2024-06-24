@@ -6,6 +6,7 @@ import SearchChannelPanel from '../components/Channels/SearchChannelPanel.js';
 import MyChannels from '../components/Channels/MyChannels.js';
 import { CreateChannelForm } from '../components/Forms/CreateChannelForm.js';
 import { CreateChannelEventForm } from '../components/Forms/CreateChannelEventForm.js';
+import { CreateAccessDocumentForm } from '../components/Forms/CreateAccessDocumentForm.js';
 
 export default function App() {
   
@@ -26,6 +27,10 @@ export default function App() {
         <SearchChannelPanel />
       </div>
 
+
+      <div className='list'>
+        <CreateAccessDocumentForm />
+      </div>
     </div>
   );
 

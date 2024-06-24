@@ -36,13 +36,13 @@ export class ResponseChannelEvent {
 
     creation_date = "";
 
-    // pending, registered, completed
+    // 'pending', 'registered', 'completed'
     status = "";
     action_date = "";
 
-    // pending, registered, completed
+    // 'pending', 'registered', 'completed'
     reminder_status = "";
-    reminder_time = "";
+    reminder_date = "";
 
     title = "";
     description = "";
@@ -67,4 +67,34 @@ export class ResponseChannelEvent {
 }
 
 
+export class ResponseAccessDocument {
+    _id = "";
 
+    creation_date = "";
+
+    enabled = false;
+
+    requires_approval = false;
+
+    // 'subscribe' or 'create'
+    action_type = "";
+
+    target_channel_id = "";
+
+    channel_title_template = "New Channel {index}";
+
+    constructor(data=null) {
+        if (data)
+            this.updateProperties(data);
+    }
+    updateProperties(data) {
+        for (let key in this) {
+            if (data.hasOwnProperty(key)) {
+                this[key] = data[key];
+            }
+        }
+    }
+    isValid() {
+        return this._id !== undefined && this._id !== null && this._id !== "";
+    }
+}

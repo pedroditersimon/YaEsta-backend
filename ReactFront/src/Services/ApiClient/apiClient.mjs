@@ -1,7 +1,7 @@
 import doFetch from "./fetchHelper.mjs";
 
 // Import models
-import { ResponseChannel, ResponseChannelEvent } from "./responseModels.mjs";
+import { ResponseAccessDocument, ResponseChannel, ResponseChannelEvent } from "./responseModels.mjs";
 
 /**
  * Provides methods to interact with the API for client-side operations.
@@ -15,7 +15,7 @@ export class ApiClient {
         this.baseURL = baseURL;
     }
 
-    //region Auth Section
+    //region Auth
     // ------------ register ------------>
     /**
      * Registers a new user.
@@ -39,7 +39,7 @@ export class ApiClient {
             return false;
         }
     }
-    
+
     // ------------ login ------------>
     /**
      * Logs in a user.
@@ -63,12 +63,12 @@ export class ApiClient {
     }
     //endregion
 
-    //region User Section
+    //region Channels
     // ------------ Public channel search ------------>
     /**
      * Searches for public channels by name.
      * @param {string} channelName - The name of the channel to search for.
-     * @returns {Promise<Array>} A promise that resolves with an array of public channels.
+     * @returns {Promise<Array<ResponseChannel>>} A promise that resolves with an array of public channels.
      */
     async getPublicChannels(channelName) {
         try {
@@ -80,7 +80,6 @@ export class ApiClient {
             return [];
         }
     }
-    
 
     // ------------ Get channel by ID ------------>
     /**
@@ -99,6 +98,113 @@ export class ApiClient {
         }
     }
 
+    // ------------ Get channels of the logged user ------------>
+    /**
+     * Retrieves channels associated with the logged-in user.
+     * @returns {Promise<Array<ResponseChannel>>} A promise that resolves with an array of channels associated with the user.
+     */
+    async getUserChannels() {
+        try {
+            const response = await doFetch(this.baseURL, `/channels/user`);
+            const data = await response.json();
+            return data.map(c => new ResponseChannel(c));
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
+    // ------------ Create new channel ------------>
+    /**
+     * Creates a new channel.
+     * @param {Object} channelObj - The object containing the channel details.
+     * @returns {Promise<ResponseChannel>} A promise that resolves with the created channel.
+     */
+    async createNewChannel(channelObj) {
+        const body = {
+            'channel': channelObj
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/channels/create`, "POST", body);
+            const data = await response.json();
+            return new ResponseChannel(data);
+        } catch (err) {
+            console.error(err);
+            return new ResponseChannel();
+        }
+    }
+
+    // ------------ Edit channel ------------>
+    /**
+     * Edits a channel's details.
+     * @param {Object} channelObj - The object containing the updated channel details.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
+     */
+    async editChannel(channelObj) {
+        const body = {
+            'channel': channelObj
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/channels/edit`, "PUT", body);
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    // ------------ Delete channel ------------>
+    /**
+     * Deletes a channel.
+     * @param {string} channelID - The ID of the channel to delete.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean value indicating if the deletion was successful.
+     */
+    async deleteChannel(channelID) {
+        try {
+            const response = await doFetch(this.baseURL, `/channels/delete/${channelID}`, "DELETE");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    // ------------ Subscribe to a channel ------------>
+    /**
+     * Subscribes to a channel.
+     * @param {string} channelID - The ID of the channel to subscribe to.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the subscription was successful.
+     */
+    async subscribeToChannel(channelID) {
+        try {
+            const response = await doFetch(this.baseURL, `/channels/subscribe/${channelID}`, "POST");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    // ------------ Unsubscribe from a channel ------------>
+    /**
+     * Unsubscribes from a channel.
+     * @param {string} channelID - The ID of the channel to unsubscribe from.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the unsubscription was successful.
+     */
+    async unsubscribeFromChannel(channelID) {
+        try {
+            const response = await doFetch(this.baseURL, `/channels/unsubscribe/${channelID}`, "POST");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+    //endregion
+
+    //region Events
     // ------------ Get event by ID ------------>
     /**
      * Retrieves an event by its ID.
@@ -120,11 +226,11 @@ export class ApiClient {
     /**
      * Retrieves completed events associated with a channel.
      * @param {string} channelID - The ID of the channel.
-     * @returns {Promise<Array>} A promise that resolves with an array of events associated with the channel.
+     * @returns {Promise<Array<ResponseChannelEvent>>} A promise that resolves with an array of completed events associated with the channel.
      */
-    async getChannelCompletedEvents(channelID) {
+    async getCompletedEventsByChannelID(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/channels/completed_events/${channelID}`);
+            const response = await doFetch(this.baseURL, `/events/completed/channel/${channelID}`);
             const data = await response.json();
             return data.map(ev => new ResponseChannelEvent(ev));
         } catch (err) {
@@ -133,159 +239,32 @@ export class ApiClient {
         }
     }
 
-    // ------------ Subscribe to a channel ------------>
-    /**
-     * Subscribes to a channel.
-     * @param {string} channelID - The ID of the channel to subscribe to.
-     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the subscription was successful.
-     */
-    async subscribeToChannel(channelID) {
-        try {
-            // Make a fetch request to subscribe to the channel
-            const response = await doFetch(this.baseURL, `/channels/subscribe/${channelID}`, "POST");
-            // Return a boolean indicating whether the subscription was successful
-            return response.ok;
-        } catch (err) {
-            // If an error occurs, log it and return an empty array
-            console.error(err);
-            return false;
-        }
-    }
-
-    // ------------ Unsubscribe from a channel ------------>
-    /**
-     * Unsubscribes from a channel.
-     * @param {string} channelID - The ID of the channel to unsubscribe from.
-     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating whether the unsubscription was successful.
-     */
-    async unsubscribeFromChannel(channelID) {
-        try {
-            // Make a fetch request to unsubscribe from the channel
-            const response = await doFetch(this.baseURL, `/channels/unsubscribe/${channelID}`, "POST");
-            // Return a boolean indicating whether the unsubscription was successful
-            return response.ok;
-        } catch (err) {
-            // If an error occurs, log it and return false
-            console.error(err);
-            return false;
-        }
-    }
-
-
-    // ------------ Get logged user channels ------------>
-    /**
-     * Retrieves channels associated with the logged-in user.
-     * @returns {Promise<Array>} A promise that resolves with an array of channels associated with the user.
-     */
-    async getUserChannels() {
-        try {
-            const response = await doFetch(this.baseURL, `/user_channels`);
-            const data = await response.json();
-            return data.map(c => new ResponseChannel(c));
-        } catch (err) {
-            console.error(err);
-            return [];
-        }
-    }
-    //endregion
-
-    //region Manage Section
     // ------------ Get channel events ------------>
     /**
      * Retrieves events associated with a channel.
      * @param {string} channelID - The ID of the channel.
-     * @returns {Promise<Array>} A promise that resolves with an array of events associated with the channel.
+     * @returns {Promise<Array<ResponseChannelEvent>>} A promise that resolves with an array of events associated with the channel.
      */
-    async getChannelEvents(channelID) {
+    async getEventsByChannelID(channelID) {
         try {
-            const response = await doFetch(this.baseURL, `/channels/events/${channelID}`);
+            const response = await doFetch(this.baseURL, `/events/channel/${channelID}`);
             const data = await response.json();
             return data.map(ev => new ResponseChannelEvent(ev));
         } catch (err) {
             console.error(err);
             return [];
-        }
-    }
-    
-    // ------------ Create new channel ------------>
-    /**
-     * Creates a new channel.
-     * @param {string} title - The title of the new channel.
-     * @param {boolean} isPublic - Indicates whether the channel is public or not.
-     * @returns {Promise<ResponseChannel>} A promise that resolves with the created channel.
-     */
-    async createNewChannel(title, isPublic) {
-        const body = {
-            'channel': {
-                'title': title,
-                'isPublic': isPublic
-            }
-        };
-
-        try {
-            const response = await doFetch(this.baseURL, `/channels/create`, "POST", body);
-            const data = await response.json();
-            return new ResponseChannel(data);
-        } catch (err) {
-            console.error(err);
-            return new ResponseChannel();
-        }
-    }
-
-    // ------------ Edit channel ------------>
-    /**
-     * Edits a channel's title.
-     * @param {string} channelID - The ID of the channel to edit.
-     * @param {string} newTitle - The new title for the channel.
-     * @returns {Promise<ResponseChannel>} A promise that resolves with the edited channel.
-     */
-    async editChannel(channelID, newTitle) {
-        const body = {
-            'channel': {
-                'channel_id': channelID,
-                'title': newTitle
-            }
-        };
-
-        try {
-            const response = await doFetch(this.baseURL, `/channels/edit`, "PUT", body);
-            const data = await response.json();
-            return new ResponseChannel(data);
-        } catch (err) {
-            console.error(err);
-            return new ResponseChannel();
-        }
-    }
-
-    // ------------ Delete channel ------------>
-    /**
-     * Deletes a channel.
-     * @param {string} channelID - The ID of the channel to delete.
-     * @returns {Promise<Boolean>} A promise that resolves with a boolean value indicating if the deletion was successful.
-     */
-    async deleteChannel(channelID) {
-        try {
-            const response = await doFetch(this.baseURL, `/channels/delete/${channelID}`, "DELETE");
-            return response.ok;
-        } catch (err) {
-            console.error(err);
-            return false;
         }
     }
 
     // ------------ Create new event ------------>
     /**
      * Creates a new event.
-     * @param {string} channelID - The ID of the channel to create the event for.
-     * @param {string} eventTitle - The title of the new event.
+     * @param {Object} eventObj - The object containing the event details.
      * @returns {Promise<ResponseChannelEvent>} A promise that resolves with the created event.
      */
-    async createNewEvent(channelID, eventTitle) {
+    async createNewEvent(eventObj) {
         const body = {
-            'event': {
-                'channel_id': channelID,
-                'title': eventTitle
-            }
+            'event': eventObj
         };
 
         try {
@@ -298,10 +277,30 @@ export class ApiClient {
         }
     }
 
+    // ------------ Edit event ------------>
+    /**
+     * Edits an event's details.
+     * @param {Object} eventObj - The object containing the updated event details.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
+     */
+    async editEvent(eventObj) {
+        const body = {
+            'event': eventObj
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/events/edit`, "PUT", body);
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
     // ------------ Delete event ------------>
     /**
-     * Deletes a event.
-     * @param {string} channelID - The ID of the event to delete.
+     * Deletes an event.
+     * @param {string} eventID - The ID of the event to delete.
      * @returns {Promise<Boolean>} A promise that resolves with a boolean value indicating if the deletion was successful.
      */
     async deleteEvent(eventID) {
@@ -315,6 +314,130 @@ export class ApiClient {
     }
     //endregion
 
+    //region AccessDocuments
+    // ------------ Get AccessDocument by ID ------------>
+    /**
+     * Retrieves an access document by its ID.
+     * @param {string} accessDocumentId - The ID of the access document to retrieve.
+     * @returns {Promise<ResponseAccessDocument>} A promise that resolves with the retrieved access document.
+     */
+    async getAccessDocumentByID(accessDocumentId) {
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/${accessDocumentId}`);
+            const data = await response.json();
+            return new ResponseAccessDocument(data);
+        } catch (err) {
+            console.error(err);
+            return new ResponseAccessDocument();
+        }
+    }
+
+    // ------------ Get channel AccessDocuments ------------>
+    /**
+     * Retrieves access documents associated with a channel.
+     * @param {string} channelID - The ID of the channel.
+     * @returns {Promise<Array<ResponseAccessDocument>>} A promise that resolves with an array of access documents associated with the channel.
+     */
+    async getAccessDocumentsByChannelID(channelID) {
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/channel/${channelID}`);
+            const data = await response.json();
+            return data.map(ad => new ResponseAccessDocument(ad));
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
+    // ------------ Get user's AccessDocuments ------------>
+    /**
+     * Retrieves access documents associated with the logged-in user.
+     * @returns {Promise<Array<ResponseAccessDocument>>} A promise that resolves with an array of access documents associated with the user.
+     */
+    async getUserAccessDocuments() {
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/user`);
+            const data = await response.json();
+            return data.map(ad => new ResponseAccessDocument(ad));
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
+    // ------------ Create new AccessDocument ------------>
+    /**
+     * Creates a new access document.
+     * @param {Object} accessDocumentObj - The object containing the access document details.
+     * @returns {Promise<ResponseAccessDocument>} A promise that resolves with the created access document.
+     */
+    async createAccessDocument(accessDocumentObj) {
+        const body = {
+            'accessDocument': accessDocumentObj
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/create`, "POST", body);
+            const data = await response.json();
+            return new ResponseAccessDocument(data);
+        } catch (err) {
+            console.error(err);
+            return new ResponseAccessDocument();
+        }
+    }
+
+    // ------------ Edit AccessDocument ------------>
+    /**
+     * Edits an access document's details.
+     * @param {Object} accessDocumentObj - The object containing the updated access document details.
+     * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the edit was successful.
+     */
+    async editAccessDocument(accessDocumentObj) {
+        const body = {
+            'accessDocument': accessDocumentObj
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/edit`, "PUT", body);
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    // ------------ Delete AccessDocument ------------>
+    /**
+     * Deletes an access document.
+     * @param {string} accessDocumentId - The ID of the access document to delete.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean value indicating if the deletion was successful.
+     */
+    async deleteAccessDocument(accessDocumentId) {
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/delete/${accessDocumentId}`, "DELETE");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    // ------------ Trigger AccessDocument ------------>
+    /**
+     * Triggers an access document.
+     * @param {string} accessDocumentId - The ID of the access document to trigger.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean value indicating if the trigger was successful.
+     */
+    async triggerAccessDocument(accessDocumentId) {
+        try {
+            const response = await doFetch(this.baseURL, `/access_documents/trigger/${accessDocumentId}`, "POST");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+    //endregion
 }
 
 // Initialize and export an instance of the ApiClient
