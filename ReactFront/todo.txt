@@ -1,5 +1,0 @@
-
-Bug/Arreglar:
-
-TODO:
-- Usar .end para la ip del servidor

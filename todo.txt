@@ -1,0 +1,16 @@
+
+Bug/Arreglar:
+
+TODO:
+- para chequear si un usuario esta en una lista usar alguna consulta de mongo (y en cualquier otro caso)
+    enves de recuperar la lista enterea y usar el includes.
+- Eliminar algunas propiedades al devolver el responseChannel y event para canales privados
+    como memberCounts
+- Agregar roles de usuario y admin (administradores del equipo de desarrollo)
+- Crear funcionalidad para agregar admins a un canal,
+    la lista de admins es visible para todos los admins del canal
+    teniendo la opcion de hechar a otros
+    aunque un admin no sea miembro (se desubscribió) sigue siendo listado en la lista de admins
+- Especificar en la documentacion de notion, como se debe pasar los documentos de los endpoints de edit y create
+- Accionar la creacion de canal
+- Hacer el front para manejar los access documents
