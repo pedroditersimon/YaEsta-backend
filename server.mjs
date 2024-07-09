@@ -49,7 +49,7 @@ const eventScheduler = new EventScheduler(eventSchedulerInterval);
 
 const server = app.listen(port, async () => {
   console.log(`Listening at http://localhost:${port}`);
-  console.log(`Now: ${new Date().toISOString()}`);
+  console.log(`Now: ${new Date().toUTCString()}`);
   
   eventScheduler.startScheduling();
 });

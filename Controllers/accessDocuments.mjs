@@ -107,7 +107,7 @@ export async function createAccessDocument(req, res, next) {
 
     // calculate fields
     documentToInsert.creator_user_id = auth._id;
-    documentToInsert.creation_date = new Date().toISOString();
+    documentToInsert.creation_date = new Date().toUTCString();
 
     // if insert action_type is 'create'
     if (documentToInsert.action_type === "create")

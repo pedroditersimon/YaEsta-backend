@@ -145,7 +145,7 @@ export class AccessDocument {
     }
 
     formatDate(template) {
-        const date = new Date();
+        const date = new Date(new Date().toUTCString());
 
         const minutes = date.getMinutes();
         const hours = date.getHours();

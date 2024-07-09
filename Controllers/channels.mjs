@@ -89,7 +89,7 @@ export async function createNewChannel(req, res, next) {
     var documentToInsert = new Channel(receivedObj);
 
     // configure fields
-    documentToInsert.creation_date = new Date().toISOString();
+    documentToInsert.creation_date = new Date().toUTCString();
     documentToInsert.isPublic = receivedObj.isPublic === true || receivedObj.isPublic === "on" || receivedObj.isPublic == "true";
     documentToInsert.admins = [auth._id];
 

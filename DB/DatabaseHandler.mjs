@@ -299,7 +299,7 @@ export class DataBaseHandler {
      */
     async get_global_upcoming_events(threshold_ms, count = 20) {
         // Create a threshold date by adding the specified milliseconds to the current date
-        const threshold_time = new Date();
+        const threshold_time = new Date(new Date().toUTCString());
         threshold_time.setMilliseconds(threshold_time.getMilliseconds() + threshold_ms);
 
         // Define the MongoDB aggregation pipeline

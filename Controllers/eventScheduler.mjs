@@ -82,7 +82,7 @@ export default class EventScheduler {
         }
 
         // define milliseconds timeout
-        const now = new Date();
+        const now = new Date(new Date().toUTCString());
         const timeout = new Date(event.action_date) - now;
 
         if (timeout <= 0 || timeout == NaN) {

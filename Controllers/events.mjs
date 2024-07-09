@@ -116,8 +116,10 @@ export async function createNewEvent (req, res, next) {
     var documentToInsert = new ChannelEvent(receivedObj);
 
     // configure fields
-    documentToInsert.creation_date = new Date().toISOString();
+    documentToInsert.creation_date = new Date().toUTCString();
+    documentToInsert.action_date = new Date(receivedObj.action_date).toUTCString();
     documentToInsert.status = "pending";
+    documentToInsert.reminder_date = new Date(receivedObj.reminder_date).toUTCString();
     documentToInsert.reminder_status = "pending";
 
     // add the new event in db
@@ -169,6 +171,7 @@ export async function editEvent(req, res, next) {
     if (documentToInsert.action_date !== existingEvent.action_date) {
         // reset status to re-schedule it
         documentToInsert.status = "pending";
+        documentToInsert.action_date = new Date(documentToInsert.action_date).toUTCString();
     }
 
     // reminder date changed (only if uncompleted)
@@ -176,6 +179,7 @@ export async function editEvent(req, res, next) {
         && documentToInsert.reminder_date !== existingEvent.reminder_date) {
         // reset status to re-schedule it
         documentToInsert.reminder_status = "pending";
+        documentToInsert.reminder_status = new Date(documentToInsert.reminder_status).toUTCString();
     }
 
     //documentToInsert.removeCalculatedProps();
