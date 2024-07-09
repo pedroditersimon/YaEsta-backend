@@ -28,6 +28,8 @@ const removeCookie = (res) => {
     res.cookie("auth_token", null, {
         httpOnly: true,
         maxAge: 1, // 1ms
+        secure: true,
+        sameSite: "none", 
     });
     return res;
  }
@@ -108,6 +110,8 @@ export async function login(req, res, next) {
     res.cookie("auth_token", token, {
         httpOnly: true,
         maxAge: 3 * 60 * 60 * 1000, // 3hrs in ms
+        secure: true,
+        sameSite: "none", 
     });
     return res.status(200).json({ message: `Logged as ${username}!` });
 };
