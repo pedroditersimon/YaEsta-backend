@@ -305,7 +305,7 @@ export class DataBaseHandler {
         // Define the MongoDB aggregation pipeline
         const pipeline = [
             { $match: { "status": "pending" } },
-            { $match: { "action_date": { $lte: threshold_time.toISOString() } } },
+            { $match: { "action_date": { $lte: threshold_time.toUTCString() } } },
             { $limit: count },
             { $sort: { "action_date": 1 } },
         ];
