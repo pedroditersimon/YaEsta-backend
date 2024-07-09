@@ -3,13 +3,13 @@ import morgan from 'morgan';
 
 import express from "express";
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 app.use(express.json());
 
 // CORS
 import cors from "cors";
 app.use(cors({
-  origin: ['http://localhost:3000',], // Replace with your frontend domain
+  origin: ['http://localhost:3000', process.env.CORS_ORIGIN], // Replace with your frontend domain
   credentials: true, // Enable cookies and HTTP authentication
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
