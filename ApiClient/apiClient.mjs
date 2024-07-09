@@ -144,9 +144,12 @@ export class ApiClient {
      * @param {Object} channelObj - The object containing the channel details.
      * @returns {Promise<ResponseChannel>} A promise that resolves with the created channel.
      */
-    async createNewChannel(channelObj) {
+    async createNewChannel(title, isPublic=false) {
         const body = {
-            'channel': channelObj
+            'channel': {
+                title: title,
+                isPublic: isPublic
+            }
         };
 
         try {
@@ -165,9 +168,13 @@ export class ApiClient {
      * @param {Object} channelObj - The object containing the updated channel details.
      * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
      */
-    async editChannel(channelObj) {
+    async editChannel(channelID, title, isPublic=false) {
         const body = {
-            'channel': channelObj
+            'channel': {
+                _id: channelID,
+                title: title,
+                isPublic: isPublic
+            }
         };
 
         try {
@@ -294,9 +301,15 @@ export class ApiClient {
      * @param {Object} eventObj - The object containing the event details.
      * @returns {Promise<ResponseChannelEvent>} A promise that resolves with the created event.
      */
-    async createNewEvent(eventObj) {
+    async createNewEvent(channel_id, action_date, reminder_date, title, description) {
         const body = {
-            'event': eventObj
+            'event': {
+                channel_id: channel_id,
+                action_date: action_date,
+                reminder_date: reminder_date,
+                title: title,
+                description: description
+            }
         };
 
         try {
@@ -315,9 +328,15 @@ export class ApiClient {
      * @param {Object} eventObj - The object containing the updated event details.
      * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
      */
-    async editEvent(eventObj) {
+    async editEvent(eventID, action_date, reminder_date, title, description) {
         const body = {
-            'event': eventObj
+            'event': {
+                _id: eventID,
+                action_date: action_date,
+                reminder_date: reminder_date,
+                title: title,
+                description: description
+            }
         };
 
         try {
@@ -411,9 +430,14 @@ export class ApiClient {
      * @param {Object} accessDocumentObj - The object containing the access document details.
      * @returns {Promise<ResponseAccessDocument>} A promise that resolves with the created access document.
      */
-    async createAccessDocument(accessDocumentObj) {
-        const body = {
-            'accessDocument': accessDocumentObj
+    async createAccessDocument(action_type, target_channel_id, channel_title_template, requires_approval=false) {
+          const body = {
+            'accessDocument': {
+                action_type: action_type,
+                target_channel_id: target_channel_id,
+                channel_title_template: channel_title_template,
+                requires_approval: requires_approval
+            }
         };
 
         try {
@@ -432,9 +456,16 @@ export class ApiClient {
      * @param {Object} accessDocumentObj - The object containing the updated access document details.
      * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the edit was successful.
      */
-    async editAccessDocument(accessDocumentObj) {
+    async editAccessDocument(accessDocumentId, enabled, action_type, target_channel_id, channel_title_template, requires_approval) {
         const body = {
-            'accessDocument': accessDocumentObj
+            'accessDocument': {
+                _id: accessDocumentId,
+                enabled: enabled,
+                action_type: action_type,
+                target_channel_id: target_channel_id,
+                channel_title_template: channel_title_template,
+                requires_approval: requires_approval
+            }
         };
 
         try {

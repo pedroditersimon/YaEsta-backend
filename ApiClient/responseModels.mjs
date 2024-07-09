@@ -1,7 +1,6 @@
 
-// ------------ Response models ------------>
+// ------------ Response models or 'ViewModel' ------------>
 // used to remove internal information from response objects, contains only necessary data
-
 
 export class ResponseChannel {
     _id = "";
