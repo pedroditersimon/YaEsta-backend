@@ -1,5 +1,5 @@
 import { dbHandler } from "../DB/DatabaseHandler.mjs";
-import { ChannelEvent } from "../models/models.mjs";
+import { ChannelEvent } from "../Models/models.mjs";
 
 export default class EventScheduler {
     scheduling_interval_id;

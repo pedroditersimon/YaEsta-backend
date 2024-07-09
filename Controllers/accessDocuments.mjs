@@ -3,7 +3,7 @@ import { dbHandler } from "../DB/DatabaseHandler.mjs";
 // get auth
 import { warningRoute, verifyToken, compareUserAuth, notAuthorizedError } from "./auth.mjs";
 
-import { AccessDocument, Channel, isValidID } from "../models/models.mjs";
+import { AccessDocument, Channel, isValidID } from "../Models/models.mjs";
 import { ResponseAccessDocument } from "../ApiClient/responseModels.mjs";
 
 import { checkAdminAndMemberChannel, getOnlyDefinedFields } from "../Utils/utils.mjs";

@@ -2,7 +2,7 @@
 import { dbHandler} from "../DB/DatabaseHandler.mjs";
 
 // get models
-import {Channel, ChannelEvent, isValidID } from "../models/models.mjs";
+import {Channel, ChannelEvent, isValidID } from "../Models/models.mjs";
 import { ResponseChannel, ResponseChannelEvent } from "../ApiClient/responseModels.mjs";
 
 // get auth

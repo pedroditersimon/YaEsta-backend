@@ -2,7 +2,7 @@ import 'dotenv/config';
 import MongoDBClient from "./MongoDBClient.mjs";
 
 // get models
-import { User, Channel, ChannelEvent, AccessDocument } from "../models/models.mjs";
+import { User, Channel, ChannelEvent, AccessDocument } from "../Models/models.mjs";
 import { ObjectId } from "mongodb";
  
 export class DataBaseHandler {

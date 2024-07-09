@@ -2,7 +2,7 @@
 import { dbHandler } from "../DB/DatabaseHandler.mjs";
 
 // get models
-import { AccessDocument, Channel } from "../models/models.mjs";
+import { AccessDocument, Channel } from "../Models/models.mjs";
 
 /**
  * Fetches and validates a channel object.
