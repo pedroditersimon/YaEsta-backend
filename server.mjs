@@ -11,7 +11,7 @@ import cors from "cors";
 app.use(cors({
   origin: ['http://localhost:3000', process.env.CORS_ORIGIN], // Replace with your frontend domain
   credentials: true, // Enable cookies and HTTP authentication
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
 }));
 
 app.use(morgan("dev"));
