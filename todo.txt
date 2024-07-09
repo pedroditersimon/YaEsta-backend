@@ -14,3 +14,7 @@ TODO:
 - Especificar en la documentacion de notion, como se debe pasar los documentos de los endpoints de edit y create
 - Accionar la creacion de canal
 - Hacer el front para manejar los access documents
+
+Recomendaciones:
+- Poner la logica recurrente de servidor, como 'eventScheduler', notificaciones y demas,
+    en un servidor 'aparte', dedicado exclusivamente a la logica

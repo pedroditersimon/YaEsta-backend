@@ -1,10 +1,10 @@
-import { MongoDBClient } from "./MongoDBClient.mjs";
+import MongoDBClient from "./MongoDBClient.mjs";
 
 // get models
 import { User, Channel, ChannelEvent, AccessDocument } from "../models/models.mjs";
 import { ObjectId } from "mongodb";
-
-class DataBaseHandler {
+ 
+export class DataBaseHandler {
     mongoClient;
 
     constructor() {
@@ -286,6 +286,47 @@ class DataBaseHandler {
     }
 
     /**
+     * Retrieves upcoming global (pending) events within a specified time threshold.
+     * @param {number} threshold_ms - The time threshold in milliseconds. Events 
+     *                                occurring after this threshold will not be retrieved.
+     * @param {number} [count=20] - The maximum number of events to retrieve.
+     * @returns {Promise<Array<ChannelEvent>>} A promise that resolves with an array of ChannelEvent objects.
+     */
+    async get_global_upcoming_events(threshold_ms, count = 20) {
+        // Create a threshold date by adding the specified milliseconds to the current date
+        const threshold_time = new Date();
+        threshold_time.setMilliseconds(threshold_time.getMilliseconds() + threshold_ms);
+
+        // Define the MongoDB aggregation pipeline
+        const pipeline = [
+            { $match: { "status": "pending" } },
+            { $match: { "action_date": { $lte: threshold_time.toISOString() } } },
+            { $limit: count },
+            { $sort: { "action_date": 1 } },
+        ];
+
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
+        return docs.map((d) => new ChannelEvent(d));
+    }
+
+    /**
+     * Retrieves registered global events.
+     * @param {number} [count=20] - The maximum number of events to retrieve.
+     * @returns {Promise<Array<ChannelEvent>>} A promise that resolves with an array of ChannelEvent objects.
+     */
+    async get_global_registered_events(count = 20) {
+        // Define the MongoDB aggregation pipeline
+        const pipeline = [
+            { $match: { "status": "registered" } },
+            { $limit: count },
+            { $sort: { "action_date": 1 } },
+        ];
+
+        const docs = await this.mongoClient.getAggregate("events", pipeline);
+        return docs.map((d) => new ChannelEvent(d));
+    }
+
+    /**
      * Creates a new event.
      * @param {ChannelEvent} newEvent - The new event object to create.
      * @returns {Promise<ChannelEvent>} A promise that resolves with the created event.
@@ -460,6 +501,4 @@ class DataBaseHandler {
 }
 
 // connect database
-const dbHandler = new DataBaseHandler();
-
-export { DataBaseHandler, dbHandler };
+export const dbHandler = new DataBaseHandler();

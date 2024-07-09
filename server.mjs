@@ -19,14 +19,6 @@ app.use(morgan("dev"));
 import cookieParser from "cookie-parser";
 app.use(cookieParser());
 
-/*
-// parse form
-  //req.fields contains non-file fields 
-  //req.files contains files 
-import formidableMiddleware from 'express-formidable';
-app.use(formidableMiddleware());
-*/
-
 // auth
 import { router as authRouter } from "./Controllers/auth.mjs";
 app.use("/", authRouter);
@@ -47,14 +39,23 @@ app.use("/", eventsRouter);
 import { router as accessDocumentsRouter } from "./Controllers/accessDocuments.mjs";
 app.use("/", accessDocumentsRouter);
 
+import EventScheduler from "./Controllers/eventScheduler.mjs";
+
+// 30 min interval
+//const eventSchedulerInterval = 30 * 60 * 1000;
+const eventSchedulerInterval = 5 * 1000;
+const eventScheduler = new EventScheduler(eventSchedulerInterval);
 
 
 const server = app.listen(port, async () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`Now: ${new Date().toISOString()}`);
+  
+  eventScheduler.startScheduling();
 });
 
 // Handling Error
 process.on("unhandledRejection", err => {
   console.log(`An error occurred: ${err.message}`)
-  server.close(() => process.exit(1))
+  // server.close(() => process.exit(1))
 })

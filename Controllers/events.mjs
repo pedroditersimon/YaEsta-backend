@@ -130,7 +130,7 @@ export async function createNewEvent (req, res, next) {
     res.status(200).send(resEvent);
 };
 
-// ------------ edit channel ------------>
+// ------------ edit event ------------>
 router.route('/events/edit').put( verifyToken, editEvent);
 export async function editEvent(req, res, next) {
     var auth = req.auth;
@@ -143,6 +143,10 @@ export async function editEvent(req, res, next) {
     var existingEvent = await dbHandler.get_event_by_id(receivedObj._id);
     if (!existingEvent.isValid()) 
         return res.status(404).json({ error: `No event found with id ${receivedObj._id}`});
+
+    // check if the user is member and admin of requested channel
+    if (existingEvent.status === "completed")
+        return res.status(400).json({ message: `Cannot edit a completed event` });
 
     // check if the user is member and admin of requested channel
     var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, existingEvent.channel_id);
@@ -160,6 +164,19 @@ export async function editEvent(req, res, next) {
     delete documentToInsert.creation_date;
     delete documentToInsert.status;
     delete documentToInsert.reminder_status;
+
+    // action date changed
+    if (documentToInsert.action_date !== existingEvent.action_date) {
+        // reset status to re-schedule it
+        documentToInsert.status = "pending";
+    }
+
+    // reminder date changed (only if uncompleted)
+    if (existingEvent.reminder_status !== "completed"
+        && documentToInsert.reminder_date !== existingEvent.reminder_date) {
+        // reset status to re-schedule it
+        documentToInsert.reminder_status = "pending";
+    }
 
     //documentToInsert.removeCalculatedProps();
 

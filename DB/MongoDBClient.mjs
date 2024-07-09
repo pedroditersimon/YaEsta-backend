@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { MongoClient, ServerApiVersion, ObjectId } from "mongodb";
 
-class MongoDBClient {
+export default class MongoDBClient {
     mongoClient;
     database;
 
@@ -127,6 +127,9 @@ class MongoDBClient {
     }
 
     async updateOne(collectionName, filter, jsonObj) {
+        // create a copy 
+        jsonObj = Object.assign({}, jsonObj);
+
         // Convertir string _id a ObjectId de MongoDB
         if (typeof filter._id === 'string') {
             filter._id = new ObjectId(filter._id);
@@ -145,5 +148,3 @@ class MongoDBClient {
     }
 
 }
-
-export { MongoDBClient };
