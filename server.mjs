@@ -43,12 +43,12 @@ import EventScheduler from "./Controllers/eventScheduler.mjs";
 
 // 30 min interval
 //const eventSchedulerInterval = 30 * 60 * 1000;
-const eventSchedulerInterval = 5 * 1000;
+const eventSchedulerInterval = 60 * 1000;
 const eventScheduler = new EventScheduler(eventSchedulerInterval);
 
 
 const server = app.listen(port, async () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`Listening at http://localhost:${port}`);
   console.log(`Now: ${new Date().toISOString()}`);
   
   eventScheduler.startScheduling();

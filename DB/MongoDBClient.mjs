@@ -5,7 +5,7 @@ export default class MongoDBClient {
     mongoClient;
     database;
 
-    constructor({URI = process.env.MONGODB_URI, databaseName}) {
+    constructor({URI, databaseName}) {
         console.log("Connecting to MongoDBClient...");
         // MongoDB
         this.mongoClient = new MongoClient(URI,  {
