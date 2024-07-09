@@ -19,12 +19,13 @@ export class ApiClient {
     // ------------ register ------------>
     /**
      * Registers a new user.
-     * @param {string} username - The username of the new user.
-     * @param {string} password - The password for the new user.
-     * @param {string} repeat_password - The repeated password for validation.
-     * @returns {Promise<Boolean>} A promise that resolves with the registration response.
+     * @param {Object} params - The parameters for registering the new user.
+     * @param {string} params.username - The username of the new user.
+     * @param {string} params.password - The password for the new user.
+     * @param {string} params.repeat_password - The repeated password for validation.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the registration was successful.
      */
-    async register(username, password, repeat_password) {
+    async register({ username, password, repeat_password }) {
         const body = {
             'username': username,
             'password': password,
@@ -43,11 +44,12 @@ export class ApiClient {
     // ------------ login ------------>
     /**
      * Logs in a user.
-     * @param {string} username - The username of the user.
-     * @param {string} password - The password of the user.
-     * @returns {Promise<Boolean>} A promise that resolves with the login response.
+     * @param {Object} params - The parameters for logging in.
+     * @param {string} params.username - The username of the user.
+     * @param {string} params.password - The password of the user.
+     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the login was successful.
      */
-    async login(username, password) {
+    async login({ username, password }) {
         const body = {
             'username': username,
             'password': password,
@@ -141,10 +143,12 @@ export class ApiClient {
     // ------------ Create new channel ------------>
     /**
      * Creates a new channel.
-     * @param {Object} channelObj - The object containing the channel details.
+     * @param {Object} params - The parameters for creating the channel.
+     * @param {string} params.title - The title of the new channel.
+     * @param {boolean} [params.isPublic=false] - The visibility status of the channel (public/private).
      * @returns {Promise<ResponseChannel>} A promise that resolves with the created channel.
      */
-    async createNewChannel(title, isPublic=false) {
+    async createNewChannel({ title, isPublic = false }) {
         const body = {
             'channel': {
                 title: title,
@@ -162,13 +166,15 @@ export class ApiClient {
         }
     }
 
-    // ------------ Edit channel ------------>
     /**
-     * Edits a channel's details.
-     * @param {Object} channelObj - The object containing the updated channel details.
+     * Edits a channel details. You can omit parameters to keep them unchanged.
+     * @param {Object} params - The parameters for editing the channel.
+     * @param {string} params.channelID - The unique identifier of the channel to be edited.
+     * @param {string} [params.title] - The new title for the channel.
+     * @param {boolean} [params.isPublic=false] - The visibility status of the channel (public/private).
      * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
      */
-    async editChannel(channelID, title, isPublic=false) {
+    async editChannel({ channelID, title, isPublic = false }) {
         const body = {
             'channel': {
                 _id: channelID,
@@ -176,7 +182,7 @@ export class ApiClient {
                 isPublic: isPublic
             }
         };
-
+        
         try {
             const response = await doFetch(this.baseURL, `/channels/edit`, "PUT", body);
             return response.ok;
@@ -298,10 +304,15 @@ export class ApiClient {
     // ------------ Create new event ------------>
     /**
      * Creates a new event.
-     * @param {Object} eventObj - The object containing the event details.
+     * @param {Object} params - The parameters for creating the event.
+     * @param {string} params.channel_id - The ID of the channel where the event is created.
+     * @param {string} params.action_date - The date when the event is scheduled.
+     * @param {string} [params.reminder_date] - The date when a reminder for the event should be sent.
+     * @param {string} params.title - The title of the event.
+     * @param {string} [params.description] - A description of the event.
      * @returns {Promise<ResponseChannelEvent>} A promise that resolves with the created event.
      */
-    async createNewEvent(channel_id, action_date, reminder_date, title, description) {
+    async createNewEvent({ channel_id, action_date, reminder_date, title, description }) {
         const body = {
             'event': {
                 channel_id: channel_id,
@@ -324,11 +335,16 @@ export class ApiClient {
 
     // ------------ Edit event ------------>
     /**
-     * Edits an event's details.
-     * @param {Object} eventObj - The object containing the updated event details.
-     * @returns {Promise<Boolean>} A promise that resolves with a boolean indicating if the edit was successful.
+    * Edits an event details. You can omit parameters to keep them unchanged.
+    * @param {Object} params - The parameters for editing the event.
+    * @param {string} params.eventID - The ID of the event to be edited.
+    * @param {string} [params.action_date] - The date when the event is scheduled.
+    * @param {string} [params.reminder_date] - The date when a reminder for the event should be sent.
+    * @param {string} [params.title] - The title of the event.
+    * @param {string} [params.description] - A description of the event.
+    * @returns {Promise<boolean>} A promise that resolves with the edited event (true/false).
      */
-    async editEvent(eventID, action_date, reminder_date, title, description) {
+    async editEvent({ eventID, action_date, reminder_date, title, description }) {
         const body = {
             'event': {
                 _id: eventID,
@@ -427,10 +443,14 @@ export class ApiClient {
     // ------------ Create new AccessDocument ------------>
     /**
      * Creates a new access document.
-     * @param {Object} accessDocumentObj - The object containing the access document details.
+    * @param {Object} params - The parameters for creating the access document.
+    * @param {string} params.action_type - The type of action for the access document. (subscribe/create)
+    * @param {string} params.target_channel_id - The ID of the target channel for the access document.
+    * @param {string} params.channel_title_template - The title template for the access document.
+    * @param {boolean} [params.requires_approval=false] - Indicates if the access document requires approval.
      * @returns {Promise<ResponseAccessDocument>} A promise that resolves with the created access document.
      */
-    async createAccessDocument(action_type, target_channel_id, channel_title_template, requires_approval=false) {
+    async createAccessDocument({ action_type, target_channel_id, channel_title_template, requires_approval = false }) {
           const body = {
             'accessDocument': {
                 action_type: action_type,
@@ -452,11 +472,17 @@ export class ApiClient {
 
     // ------------ Edit AccessDocument ------------>
     /**
-     * Edits an access document's details.
-     * @param {Object} accessDocumentObj - The object containing the updated access document details.
-     * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the edit was successful.
-     */
-    async editAccessDocument(accessDocumentId, enabled, action_type, target_channel_id, channel_title_template, requires_approval) {
+     * Edits an access document. You can omit parameters to keep them unchanged.
+     * @param {Object} params - The parameters for editing the access document.
+     * @param {string} params.accessDocumentId - The ID of the access document to be edited.
+     * @param {boolean} [params.enabled] - Indicates if the access document is enabled.
+     * @param {string} [params.action_type] - The type of action for the access document (subscribe/create).
+     * @param {string} [params.target_channel_id] - The ID of the target channel for the access document.
+     * @param {string} [params.channel_title_template] - The title template for the access document.
+     * @param {boolean} [params.requires_approval=false] - Indicates if the access document requires approval.
+    * @returns {Promise<boolean>} A promise that resolves with the edited AccessDocument (true/false).
+    */
+    async editAccessDocument({ accessDocumentId, enabled, action_type, target_channel_id, channel_title_template, requires_approval }) {
         const body = {
             'accessDocument': {
                 _id: accessDocumentId,
