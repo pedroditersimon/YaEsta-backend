@@ -1,5 +1,5 @@
 // get database
-import { dbHandler } from "../db/DatabaseHandler.mjs";
+import { dbHandler } from "../DB/DatabaseHandler.mjs";
 
 // get models
 import { AccessDocument, Channel } from "../models/models.mjs";

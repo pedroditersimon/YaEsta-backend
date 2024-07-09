@@ -1,5 +1,5 @@
 // get database
-import { dbHandler } from "../db/DatabaseHandler.mjs";
+import { dbHandler } from "../DB/DatabaseHandler.mjs";
 
 // get models
 import { Channel, ChannelEvent, isValidID } from "../models/models.mjs";

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import MongoDBClient from "./MongoDBClient.mjs";
 
 // get models
@@ -8,7 +9,11 @@ export class DataBaseHandler {
     mongoClient;
 
     constructor() {
-        this.mongoClient = new MongoDBClient({databaseName: "YaEsta"});
+        const uri = process.env.MONGODB_URI
+            .replace("<user>", process.env.MONGODB_USER)
+            .replace("<password>", process.env.MONGODB_USER_PASS);
+
+        this.mongoClient = new MongoDBClient({URI: uri, databaseName: "YaEsta"});
     }
 
     //region auth

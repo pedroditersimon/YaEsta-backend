@@ -1,5 +1,5 @@
 // get database
-import { dbHandler } from "../db/DatabaseHandler.mjs";
+import { dbHandler } from "../DB/DatabaseHandler.mjs";
 import { User } from "../models/models.mjs";
 
 import bcrypt from "bcryptjs";

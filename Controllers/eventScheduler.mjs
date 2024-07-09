@@ -1,4 +1,4 @@
-import { dbHandler } from "../db/DatabaseHandler.mjs";
+import { dbHandler } from "../DB/DatabaseHandler.mjs";
 import { ChannelEvent } from "../models/models.mjs";
 
 export default class EventScheduler {
