@@ -47,9 +47,9 @@ app.use("/", notificationsRouter);
 
 
 // EventScheduler
-// 30 min interval
-//const eventSchedulerInterval = 30 * 60 * 1000;
-const eventSchedulerInterval = 60 * 1000;
+// 30 seconds interval: 30 * 1000
+// 30 min interval: 30 * 60 * 1000
+const eventSchedulerInterval = 30 * 1000;
 const eventScheduler = new EventScheduler(eventSchedulerInterval);
 
 
