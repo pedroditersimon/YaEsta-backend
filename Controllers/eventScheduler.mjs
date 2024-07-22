@@ -3,6 +3,9 @@ import apiClient from "../ApiClient/apiClient.mjs";
 import { dbHandler } from "../DB/DatabaseHandler.mjs";
 import { ChannelEvent } from "../Models/models.mjs";
 
+// notifications
+import * as notifications from '../Controllers/notifications.mjs';
+
 export default class EventScheduler {
     scheduling_interval_id;
     scheduling_interval_ms;
@@ -123,7 +126,15 @@ export default class EventScheduler {
         event.status = "completed";
         const updated = await dbHandler.update_event(event);
 
-        // TODO: Send notification
+        // Send notification
+        const topic = `${event.channel_id}`;
+        const payload = {
+            notification: {
+                title: `Ahora: ${event.title}`,
+                body: `${event.description}`
+            },
+        };
+        await notifications.sendNotificationToTopic(topic, payload);
     }
 
 }

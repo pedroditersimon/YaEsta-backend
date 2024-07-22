@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import MongoDBClient from "./MongoDBClient.mjs";
 
+// notifications
+import * as notifications from '../Controllers/notifications.mjs';
+
 // get models
 import { User, Channel, ChannelEvent, AccessDocument } from "../Models/models.mjs";
 import { ObjectId } from "mongodb";
@@ -71,6 +74,19 @@ export class DataBaseHandler {
     async get_user_by_id(user_id) {
         var rawUser = await this.mongoClient.findOneIDFrom("users", user_id);
         return new User(rawUser);
+    }
+
+    /**
+     * Updates a user's details.
+     * @param {User} user - The user object with updated details.
+     * @returns {Promise<boolean>} A promise that resolves with a boolean indicating if the update was successful.
+     */
+    async update_user(user) {
+        if (!(user instanceof User))
+            return false;
+
+        const result = await this.mongoClient.updateOneID("users", user._id, user);
+        return result.acknowledged == true;
     }
 
     //endregion
@@ -206,6 +222,13 @@ export class DataBaseHandler {
         if (!result.acknowledged)
             return false;
 
+        // Unsubscribe user from notification topic
+        if (user.FCM_token)
+        {
+            //const channel_topic = channel.getNotificationTopic();
+            await notifications.unsubscribeFromTopic(user.FCM_token, channel._id);
+        }
+
         return true;
     }
 
@@ -232,6 +255,13 @@ export class DataBaseHandler {
         var result = await this.mongoClient.updateOneID("channels", channel._id, insertObj);
         if (!result.acknowledged)
             return false;
+
+        // Subscribe user from notification topic
+        if (user.FCM_token)
+        {
+            //const channel_topic = channel.getNotificationTopic();
+            await notifications.subscribeToTopic(user.FCM_token, channel._id);
+        }
 
         return true;
     }
@@ -501,6 +531,51 @@ export class DataBaseHandler {
         return result.acknowledged == true;
     }
 
+    //endregion
+
+    //region Notifications
+    /**
+     * Re-subscribe a user to associated channel notifications.
+     * @param {string} user_id - The ID of the user.
+     * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
+     */
+    async resubscribe_user_notifications(user_id, new_FCM_token=null) {
+        var user = await this.get_user_by_id(user_id);
+        if (!user.isValid())
+            return false;
+
+        if (new_FCM_token && user.FCM_token !== new_FCM_token) {
+            // set new token and update user in db
+            user.FCM_token = new_FCM_token;
+            await this.update_user(user);
+        }
+
+        if (!user.FCM_token)
+        {
+            console.log("User has not Firebase Cloud Messaging token");
+            return false;
+        }
+
+        // get user channels
+        const user_channels = await this.get_channels_by_user_id(user_id);
+
+        try {
+            // subscribe to every channel topic
+            user_channels.forEach(async channel => {
+                // skip invalid channels
+                if (!channel.isValid())
+                    return;
+
+                await notifications.subscribeToTopic(user.FCM_token, channel._id);
+            });
+        }
+        catch (error) {
+            console.error("Error re-subscribing user notifications:", error);
+            return false;
+        }
+
+        return true;
+    }
     //endregion
 
 }

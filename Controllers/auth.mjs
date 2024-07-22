@@ -119,7 +119,7 @@ export async function login(req, res, next) {
 
 
 // ------------ token authentication middleware ------------>
-export const verifyToken = (req, res, next) => {
+export async function verifyToken(req, res, next) {
     var token = req.cookies.auth_token;
 
     if (!token) 
@@ -145,7 +145,7 @@ export const verifyToken = (req, res, next) => {
 
 
 // ------------ user authentication ------------>
-export const compareUserAuth = (req, user_id) => {
+export async function compareUserAuth(req, user_id) {
     var auth = new Auth(req.auth);
 
     // invalid object
@@ -160,7 +160,7 @@ export const notAuthorizedError = (res) => {
 };
 
 // ------------ Warning middleware ------------>
-export const warningRoute = (req, res, next) => {
+export async function warningRoute(req, res, next) {
     console.log("Warning: This API route is being accessed.");
     return next();
 };

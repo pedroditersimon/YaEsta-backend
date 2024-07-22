@@ -257,7 +257,24 @@ export async function triggerAccessDocument(req, res, next) {
 
     // action_type: 'create'
     if (accessDocument.action_type === "create") {
+        // create an Channel object to insert
+        var documentToInsert = new Channel();
 
+        // configure fields
+        documentToInsert.title = accessDocument.generate_title();
+        documentToInsert.creation_date = new Date().toUTCString();
+        documentToInsert.isPublic = false;
+        documentToInsert.admins = [accessDocument.creator_user_id];
+
+        const createdChannel = await dbHandler.create_new_channel(documentToInsert);
+        if (!createdChannel.isValid())
+            return res.status(409).json({ error: `Cannot trigger 'create' accessDocument`});
+        
+        channel_id_to_subscribe=createdChannel._id.toString();
+
+        // register the created channel and update access document
+        accessDocument.created_channels.push({user_id: auth._id, channel_id: channel_id_to_subscribe });
+        await dbHandler.update_access_document(accessDocument);
     }
     // action_type: 'subscribe'
     else {

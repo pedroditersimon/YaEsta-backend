@@ -8,6 +8,8 @@ export class User {
     _id = "";
     username = "";
     password = "";
+    // Firebase Cloud Messaging token
+    FCM_token;
 
     constructor(data=null) {
         if (data)
@@ -123,7 +125,7 @@ export class AccessDocument {
     target_channel_id = "";
 
     channel_title_template = "New Channel {index}";
-    created_channels = []; // { user_id: channel_id }
+    created_channels = []; // { user_id: string, channel_id: string }
 
     constructor(data=null) {
         if (data)

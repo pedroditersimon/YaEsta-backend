@@ -535,6 +535,27 @@ export class ApiClient {
         }
     }
     //endregion
+
+    //region Notifications
+    /**
+     * Re-subscribe a user to associated channel notifications.
+     * @param {string} user_id - The ID of the user.
+     * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
+     */
+    async resubscribe_user_notifications(new_FCM_token=null) {
+        const body = {
+            'FCM_token': new_FCM_token
+        };
+
+        try {
+            const response = await doFetch(this.baseURL, `/notifications/resubscribe/`, "POST", body);
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+    //endregion
 }
 
 // Initialize and export an instance of the ApiClient
