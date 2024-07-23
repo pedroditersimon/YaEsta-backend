@@ -213,9 +213,11 @@ export async function unsubscribeFromChannel(req, res, next) {
     if (!isMember)
         return res.status(409).json({ error: 'User isnt a member of the channel' });
 
+    /*
     // TODO: Delete private channels if the last member has unsubscribed
     if (!channel.isPublic && channel.membersCount == 1) 
         return res.status(409).json({ error: 'Last member cannot unsubscribe from a private channel' });
+    */
 
     var unsubscribed = await dbHandler.unsubscribe_user_from_channel(auth._id, channel_id);
     if (!unsubscribed) 
