@@ -239,7 +239,7 @@ export async function editAccessDocument(req, res, next) {
 };
 
 
-async function createChannelByAccessDocument(accessDocument) {
+async function createChannelByAccessDocument(user_id, accessDocument) {
     // create an Channel object to insert
     var documentToInsert = new Channel();
 
@@ -254,7 +254,7 @@ async function createChannelByAccessDocument(accessDocument) {
         return new Channel();
 
     // register the created channel and update access document
-    const create_register = { user_id: auth._id, channel_id: createdChannel._id.toString() };
+    const create_register = { user_id: user_id, channel_id: createdChannel._id.toString() };
     accessDocument.created_channels.push(create_register);
     await dbHandler.update_access_document(accessDocument);
 
@@ -286,7 +286,7 @@ export async function triggerAccessDocument(req, res, next) {
 
         if (!userCreatedChannelID) {
             // create new channel
-            const createdChannel = await createChannelByAccessDocument(accessDocument);
+            const createdChannel = await createChannelByAccessDocument(auth._id, accessDocument);
             if (!createdChannel.isValid())
                 return res.status(409).json({ error: `Cannot trigger 'create' accessDocument`});
 

@@ -170,6 +170,6 @@ export class AccessDocument {
                 return this.created_channels[i].channel_id;
             }
         }
-        return null; // Return -1 if no matching user_id is found
+        return null; // Return null if no matching user_id is found
     }
 }
