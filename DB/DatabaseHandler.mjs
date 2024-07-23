@@ -247,9 +247,11 @@ export class DataBaseHandler {
         if (!channel.isValid())
             return false;
 
-        if (!channel.members.includes(user_id))
-            channel.members.push(user_id);
+        // already subscribed
+        if (channel.members.includes(user_id))
+            return true;
 
+        channel.members.push(user_id);
         var insertObj = { "members": channel.members };
 
         var result = await this.mongoClient.updateOneID("channels", channel._id, insertObj);
