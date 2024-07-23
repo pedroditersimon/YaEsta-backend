@@ -282,7 +282,7 @@ export async function triggerAccessDocument(req, res, next) {
     // action_type: 'create'
     if (accessDocument.action_type === "create") {
         // check if user already created a channel
-        const userCreatedChannelID = accessDocument.getUserCreatedChannelID();
+        const userCreatedChannelID = accessDocument.getUserCreatedChannelID(auth._id);
 
         if (!userCreatedChannelID) {
             // create new channel
