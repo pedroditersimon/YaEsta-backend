@@ -163,4 +163,13 @@ export class AccessDocument {
             .replace("{month}", month)
             .replace("{year}", year);
     }
+
+    getUserCreatedChannelID(user_id) {
+        for (let i = 0; i < created_channels.length; i++) {
+            if (created_channels[i].user_id === user_id) {
+                return created_channels[i].channel_id;
+            }
+        }
+        return null; // Return -1 if no matching user_id is found
+    }
 }

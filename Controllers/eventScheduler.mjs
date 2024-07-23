@@ -130,7 +130,7 @@ export default class EventScheduler {
         const topic = `${event.channel_id}`;
         const payload = {
             notification: {
-                title: `Ahora: ${event.title}`,
+                title: `[!] ${event.title}`,
                 body: `${event.description}`
             },
         };

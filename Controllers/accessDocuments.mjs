@@ -238,6 +238,29 @@ export async function editAccessDocument(req, res, next) {
     res.status(200).send(updated);
 };
 
+
+async function createChannelByAccessDocument(accessDocument) {
+    // create an Channel object to insert
+    var documentToInsert = new Channel();
+
+    // configure fields
+    documentToInsert.title = accessDocument.generate_title();
+    documentToInsert.creation_date = new Date().toUTCString();
+    documentToInsert.isPublic = false;
+    documentToInsert.admins = [accessDocument.creator_user_id];
+
+    const createdChannel = await dbHandler.create_new_channel(documentToInsert);
+    if (!createdChannel.isValid())
+        return new Channel();
+
+    // register the created channel and update access document
+    const create_register = { user_id: auth._id, channel_id: createdChannel._id.toString() };
+    accessDocument.created_channels.push(create_register);
+    await dbHandler.update_access_document(accessDocument);
+
+    return createdChannel;
+}
+
 // ------------ trigger Access Document ------------>
 router.route('/access_documents/trigger/:access_document_id').post( verifyToken, triggerAccessDocument);
 export async function triggerAccessDocument(req, res, next) {
@@ -255,26 +278,24 @@ export async function triggerAccessDocument(req, res, next) {
 
     var channel_id_to_subscribe = "";
 
+
     // action_type: 'create'
     if (accessDocument.action_type === "create") {
-        // create an Channel object to insert
-        var documentToInsert = new Channel();
+        // check if user already created a channel
+        const userCreatedChannelID = accessDocument.getUserCreatedChannelID();
 
-        // configure fields
-        documentToInsert.title = accessDocument.generate_title();
-        documentToInsert.creation_date = new Date().toUTCString();
-        documentToInsert.isPublic = false;
-        documentToInsert.admins = [accessDocument.creator_user_id];
+        if (!userCreatedChannelID) {
+            // create new channel
+            const createdChannel = await createChannelByAccessDocument(accessDocument);
+            if (!createdChannel.isValid())
+                return res.status(409).json({ error: `Cannot trigger 'create' accessDocument`});
 
-        const createdChannel = await dbHandler.create_new_channel(documentToInsert);
-        if (!createdChannel.isValid())
-            return res.status(409).json({ error: `Cannot trigger 'create' accessDocument`});
-        
-        channel_id_to_subscribe=createdChannel._id.toString();
-
-        // register the created channel and update access document
-        accessDocument.created_channels.push({user_id: auth._id, channel_id: channel_id_to_subscribe });
-        await dbHandler.update_access_document(accessDocument);
+            channel_id_to_subscribe = createdChannel._id.toString();
+        }
+        // set to resubscribe the user to already created channel
+        else {
+            channel_id_to_subscribe = userCreatedChannelID;
+        }
     }
     // action_type: 'subscribe'
     else {
