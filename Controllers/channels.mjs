@@ -46,8 +46,8 @@ export async function getUserChannels(req, res, next) {
 }
 
 // ------------ get logged user admin channels ------------>
-router.route('/channels/user/admin').get( verifyToken, getUserChannels);
-export async function getUserChannels(req, res, next) {
+router.route('/channels/user/admin').get( verifyToken, getAdminUserChannels);
+export async function getAdminUserChannels(req, res, next) {
     var auth = req.auth;
 
     // get channels
