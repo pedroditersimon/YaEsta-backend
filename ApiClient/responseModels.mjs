@@ -2,6 +2,27 @@
 // ------------ Response models or 'ViewModel' ------------>
 // used to remove internal information from response objects, contains only necessary data
 
+export class ResponseUser {
+    _id = "";
+    username = "";
+
+    constructor(data=null) {
+        if (data)
+            this.updateProperties(data);
+    }
+    updateProperties(data) {
+        for (let key in this) {
+            if (data.hasOwnProperty(key)) {
+                this[key] = data[key];
+            }
+        }
+    }
+    isValid() {
+        return this._id !== undefined && this._id !== null && this._id !== "";
+    }
+}
+
+
 export class ResponseChannel {
     _id = "";
     title = "";

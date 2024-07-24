@@ -1,7 +1,7 @@
 import doFetch from "./fetchHelper.mjs";
 
 // Import models
-import { ResponseAccessDocument, ResponseChannel, ResponseChannelEvent } from "./responseModels.mjs";
+import { ResponseAccessDocument, ResponseChannel, ResponseChannelEvent, ResponseUser } from "./responseModels.mjs";
 
 /**
  * Provides methods to interact with the API for client-side operations.
@@ -78,6 +78,22 @@ export class ApiClient {
             return false;
         }
     }
+
+    // ------------ logout ------------>
+    /**
+     * Gets the logged a user data.
+     * @returns {Promise<ResponseUser>} A promise that resolves with the ResponseUser.
+     */
+    async getLoggedUser() {
+        try {
+            const response = await doFetch(this.baseURL, `/logged_user`, "GET");
+            const data = await response.json();
+            return new ResponseUser(data);
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
     //endregion
 
     //region Channels
@@ -145,7 +161,7 @@ export class ApiClient {
      * Retrieves admin channels associated with the logged-in user.
      * @returns {Promise<Array<ResponseChannel>>} A promise that resolves with an array of channels associated with the admin user.
      */
-    async getAdminUserChannels() {
+    async getUserAdminChannels() {
         try {
             const response = await doFetch(this.baseURL, `/channels/user/admin`);
             const data = await response.json();

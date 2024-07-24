@@ -34,6 +34,19 @@ const removeCookie = (res) => {
     return res;
  }
 
+// ------------ get user ------------>
+router.route('/logged_user').get( verifyToken, getLoggedUser ); // GET
+export async function getLoggedUser(req, res, next) {
+    var auth = req.auth;
+
+    // get user from db
+    var user = await dbHandler.get_user_by_id(auth._id);
+    if (!user.isValid()) 
+        return res.status(404).json({ message: `User not found` });
+
+    return res.status(200).send(user);
+};
+
 // ------------ logout ------------>
 router.route('/logout').post(logout); // POST
 export async function logout(req, res, next) {
