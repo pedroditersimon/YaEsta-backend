@@ -91,7 +91,7 @@ export class ApiClient {
             return new ResponseUser(data);
         } catch (err) {
             console.error(err);
-            return false;
+            return new ResponseUser();
         }
     }
     //endregion
