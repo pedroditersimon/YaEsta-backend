@@ -120,6 +120,22 @@ export class DataBaseHandler {
     }
 
     /**
+     * Retrieves channels associated with a admin user ID.
+     * @param {string} user_id - The ID of the user.
+     * @param {number} count - The maximum number of channels to retrieve.
+     * @returns {Promise<Array<Channel>>} A promise that resolves with an array of channels.
+     */
+    async get_admin_channels_by_user_id(user_id, count = 20) {
+        const pipeline = [
+            { $match: { admins: { $in: [user_id] } } },
+            { $limit: count },
+            ...Channel.getPipeline(),
+        ];
+        const docs = await this.mongoClient.getAggregate("channels", pipeline);
+        return docs.map((d) => new Channel(d));
+    }
+
+    /**
      * Retrieves public channels by their title.
      * @param {string} channel_title - The title of the channels.
      * @param {number} count - The maximum number of channels to retrieve.
@@ -130,7 +146,7 @@ export class DataBaseHandler {
             {
                 $match: {
                     $and: [
-                        { title: { $regex: channel_title } },
+                        { title: { $regex: channel_title, $options: 'i' } }, // 'i' option means case insensitive
                         { isPublic: true }
                     ]
                 }
@@ -222,12 +238,10 @@ export class DataBaseHandler {
         if (!result.acknowledged)
             return false;
 
-        // Unsubscribe user from notification topic
-        if (user.FCM_token)
-        {
-            //const channel_topic = channel.getNotificationTopic();
-            await notifications.unsubscribeFromTopic(user.FCM_token, channel._id);
-        }
+        // Unsubscribe all user tokens to the channel
+        user.FCM_tokens.forEach(async (token) => {
+            await notifications.unsubscribeFromTopic(token, channel._id);
+        });
 
         return true;
     }
@@ -258,12 +272,10 @@ export class DataBaseHandler {
         if (!result.acknowledged)
             return false;
 
-        // Subscribe user from notification topic
-        if (user.FCM_token)
-        {
-            //const channel_topic = channel.getNotificationTopic();
-            await notifications.subscribeToTopic(user.FCM_token, channel._id);
-        }
+        // Subscribe all user tokens to the channel
+        user.FCM_tokens.forEach(async (token) => {
+            await notifications.subscribeToTopic(token, channel._id);
+        });
 
         return true;
     }
@@ -541,18 +553,12 @@ export class DataBaseHandler {
      * @param {string} user_id - The ID of the user.
      * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
      */
-    async resubscribe_user_notifications(user_id, new_FCM_token=null) {
+    async resubscribe_user_notifications(user_id) {
         var user = await this.get_user_by_id(user_id);
         if (!user.isValid())
             return false;
 
-        if (new_FCM_token && user.FCM_token !== new_FCM_token) {
-            // set new token and update user in db
-            user.FCM_token = new_FCM_token;
-            await this.update_user(user);
-        }
-
-        if (!user.FCM_token)
+        if (!user.FCM_tokens.length)
         {
             console.log("User has not Firebase Cloud Messaging token");
             return false;
@@ -562,13 +568,16 @@ export class DataBaseHandler {
         const user_channels = await this.get_channels_by_user_id(user_id);
 
         try {
-            // subscribe to every channel topic
+            // resubscribe to all user channel
             user_channels.forEach(async channel => {
                 // skip invalid channels
                 if (!channel.isValid())
                     return;
 
-                await notifications.subscribeToTopic(user.FCM_token, channel._id);
+                // subscribe all user tokens to the channel
+                user.FCM_tokens.forEach(async (token) => {
+                    await notifications.subscribeToTopic(token, channel._id);
+                });
             });
         }
         catch (error) {
@@ -577,6 +586,37 @@ export class DataBaseHandler {
         }
 
         return true;
+    }
+
+    //region Notifications
+    /**
+     * subscribe a user token to associated channel notifications.
+     * @param {string} user_id - The ID of the user.
+     * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
+     */
+    async subscribe_user_notification_token(user_id, FCM_token) {
+        // no token
+        if (!FCM_token)
+            return false;
+
+        var user = await this.get_user_by_id(user_id);
+        if (!user.isValid())
+            return false;
+
+        // token already registered
+        if (user.FCM_tokens.includes(FCM_token))
+            return true;
+
+        // add the new token to user tokens list
+        user.FCM_tokens.push(FCM_token);
+
+        // update user in db
+        const updated = await this.update_user(user);
+        if (!updated)
+            return false;
+
+        const resubscribed = await this.resubscribe_user_notifications(user);
+        return resubscribed;
     }
     //endregion
 

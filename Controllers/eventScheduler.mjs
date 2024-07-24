@@ -6,14 +6,15 @@ import { ChannelEvent } from "../Models/models.mjs";
 // notifications
 import * as notifications from '../Controllers/notifications.mjs';
 
-export default class EventScheduler {
+class EventScheduler {
     scheduling_interval_id;
     scheduling_interval_ms;
 
     scheduled_event_ids = [];
 
-    constructor(interval_ms) {
+    setInvervalAndStop(interval_ms) {
         this.scheduling_interval_ms = interval_ms;
+        this.stopScheduling();
     }
 
     stopScheduling() {
@@ -67,7 +68,7 @@ export default class EventScheduler {
      * @param {ChannelEvent} event - The event to schedule.
      */
     async scheduleEvent(event) {
-        // already has this event
+        // if already has this event
         if (this.scheduled_event_ids.hasOwnProperty(event._id.toString())) {
             // already scheduled
             if (event.status !== "pending") {
@@ -90,7 +91,7 @@ export default class EventScheduler {
         const now = new Date(new Date().toUTCString());
         const timeout = new Date(event.action_date) - now;
 
-        if (timeout <= 0 || timeout == NaN) {
+        if (timeout <= 0 || isNaN(timeout)) {
             console.log(`Cannot schedule event (${event.title}) is already past due, will be handled now`);
             await this.handleEvent(event);
             return false;
@@ -138,3 +139,6 @@ export default class EventScheduler {
     }
 
 }
+
+const eventScheduler = new EventScheduler();
+export default eventScheduler;

@@ -140,6 +140,26 @@ export class ApiClient {
         }
     }
 
+    // ------------ Get admin channels of the logged user ------------>
+    /**
+     * Retrieves admin channels associated with the logged-in user.
+     * @returns {Promise<Array<ResponseChannel>>} A promise that resolves with an array of channels associated with the admin user.
+     */
+    async getAdminUserChannels() {
+        try {
+            const response = await doFetch(this.baseURL, `/channels/user/admin`);
+            const data = await response.json();
+            // error
+            if (!(data instanceof Array))
+                return [];
+
+            return data.map(c => new ResponseChannel(c));
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
     // ------------ Create new channel ------------>
     /**
      * Creates a new channel.
@@ -538,17 +558,32 @@ export class ApiClient {
 
     //region Notifications
     /**
-     * Re-subscribe a user to associated channel notifications.
+     * Re-subscribe all the user notification tokens.
      * @param {string} user_id - The ID of the user.
      * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
      */
-    async resubscribe_user_notifications(new_FCM_token=null) {
+    async resubscribe_user_notifications() {
+        try {
+            const response = await doFetch(this.baseURL, `/notifications/resubscribe/`, "POST");
+            return response.ok;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    /**
+     * subscribe a user notification token to all associated channels.
+     * @param {string} user_id - The ID of the user.
+     * @returns {Promise<boolean>} - Returns true if the re-subscription is successful, false otherwise.
+     */
+    async subscribe_user_notifications(FCM_token) {
         const body = {
-            'FCM_token': new_FCM_token
+            'FCM_token': FCM_token
         };
 
         try {
-            const response = await doFetch(this.baseURL, `/notifications/resubscribe/`, "POST", body);
+            const response = await doFetch(this.baseURL, `/notifications/subscribe/`, "POST", body);
             return response.ok;
         } catch (err) {
             console.error(err);

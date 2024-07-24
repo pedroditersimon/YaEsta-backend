@@ -57,15 +57,26 @@ export async function subscribeToTopic(token, topic) {
 // ------------ resubscribe user notifications ------------>
 router.route('/notifications/resubscribe/').post( verifyToken, resubscribe_user_notifications);
 async function resubscribe_user_notifications(req, res, next) {
-    var { FCM_token } = req.body;
     var auth = req.auth;
-    console.log("resubscribe token: "+ FCM_token);
-    var success = await dbHandler.resubscribe_user_notifications(auth._id, FCM_token);
+
+    var success = await dbHandler.resubscribe_user_notifications(auth._id);
     if (!success)
         return res.status(409).send(false);
 
     res.status(200).send(success);
 };
 
+// ------------ subscribe user notifications ------------>
+router.route('/notifications/subscribe/').post( verifyToken, subscribe_user_notifications);
+async function subscribe_user_notifications(req, res, next) {
+    var { FCM_token } = req.body;
+    var auth = req.auth;
+
+    var success = await dbHandler.subscribe_user_notification_token(auth._id, FCM_token);
+    if (!success)
+        return res.status(409).send(false);
+
+    res.status(200).send(success);
+};
 
 export { router }

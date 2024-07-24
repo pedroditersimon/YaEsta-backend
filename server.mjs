@@ -13,7 +13,7 @@ import { router as eventsRouter } from "./Controllers/events.mjs";
 import { router as accessDocumentsRouter } from "./Controllers/accessDocuments.mjs";
 import { router as notificationsRouter } from "./Controllers/notifications.mjs";
 
-import EventScheduler from "./Controllers/eventScheduler.mjs";
+import eventScheduler from "./Controllers/eventScheduler.mjs";
 
 import { admin, fbMessaging } from './Controllers/Google/firebase-admin.mjs';
 
@@ -50,7 +50,7 @@ app.use("/", notificationsRouter);
 // 30 seconds interval: 30 * 1000
 // 30 min interval: 30 * 60 * 1000
 const eventSchedulerInterval = 30 * 1000;
-const eventScheduler = new EventScheduler(eventSchedulerInterval);
+eventScheduler.setInvervalAndStop(eventSchedulerInterval);
 
 
 const server = app.listen(port, async () => {

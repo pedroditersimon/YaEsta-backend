@@ -9,7 +9,7 @@ export class User {
     username = "";
     password = "";
     // Firebase Cloud Messaging token
-    FCM_token;
+    FCM_tokens = [];
 
     constructor(data=null) {
         if (data)

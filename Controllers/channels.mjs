@@ -45,6 +45,22 @@ export async function getUserChannels(req, res, next) {
     res.status(200).send(resChannels);
 }
 
+// ------------ get logged user admin channels ------------>
+router.route('/channels/user/admin').get( verifyToken, getUserChannels);
+export async function getUserChannels(req, res, next) {
+    var auth = req.auth;
+
+    // get channels
+    var channels = await dbHandler.get_admin_channels_by_user_id(auth._id);
+    if (!channels) 
+        return res.status(404).json({error:`No user found with id ${auth._id}`});
+
+    // transform the channels to a ResponseModel
+    var resChannels = channels.map(c => new ResponseChannel(c));
+
+    res.status(200).send(resChannels);
+}
+
 // ------------ get channel by id ------------>
 router.route('/channels/:channel_id').get( verifyToken, getChannelById);
 export async function getChannelById(req, res, next) {
@@ -59,9 +75,10 @@ export async function getChannelById(req, res, next) {
     // [!] if channel is private -> needs authentication security
     if (!channel.isPublic)
     {
-        // check if the user is a member of requested channel
+        // check if the user is a member or admin of requested channel
         var isMember = await checkMemberChannel(auth._id, channel);
-        if (!isMember)
+        var isAdmin = await checkAdminChannel(auth._id, channel);
+        if (!isMember && !isAdmin)
             return notAuthorizedError(res);
     }
 
@@ -123,9 +140,9 @@ export async function editChannel(req, res, next) {
     if (!existingChannel.isValid()) 
         return res.status(404).json({ error: `No channel found with id ${receivedObj._id}`});
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, existingChannel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, existingChannel);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
 
     // create a Channel object to insert by copying the existing one
@@ -156,9 +173,9 @@ export async function deleteChannel(req, res, next) {
     if (!channel.isValid()) 
         return res.status(404).json({ message: `No channel found with id ${channel_id}` });
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, channel);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
     
     // TODO: dont delete, mark a property as deleted

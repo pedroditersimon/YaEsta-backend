@@ -10,6 +10,8 @@ import { verifyToken, notAuthorizedError } from "./auth.mjs";
 
 import { checkAdminAndMemberChannel, checkMemberChannel, checkAdminChannel } from "../Utils/utils.mjs";
 
+import eventScheduler from "./eventScheduler.mjs";
+
 import express from "express";
 const router = express.Router();
 
@@ -24,9 +26,9 @@ export async function getEventsByChannelID(req, res, next) {
     if (!channel.isValid()) 
         return res.status(404).json({ error: `No channel found with id ${channel_id}`});
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, channel);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
 
     // get events
@@ -56,9 +58,9 @@ export async function getEventById(req, res, next) {
     if (!channel.isValid()) 
         return res.status(404).json({ error: `No channel found with id ${event.channel_id}`});
 
-    // check if the user is admin and member of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, channel);
+    if (!isAdmin)
         return notAuthorizedError(res);
 
     // transform the event to a ResponseModel
@@ -73,9 +75,10 @@ export async function getCompletedEventsByChannelID(req, res, next) {
     var { channel_id } = req.params;
     var auth = req.auth;
 
-    // check if the user is a member of requested channel
+    // check if the user is admin or member of requested channel
     var isMember = await checkMemberChannel(auth._id, channel_id);
-    if (!isMember)
+    var isAdmin = await checkAdminChannel(auth._id, channel_id);
+    if (!isMember && !isAdmin)
         return notAuthorizedError(res);
 
     // get events
@@ -104,9 +107,9 @@ export async function createNewEvent (req, res, next) {
     if (!channel.isValid()) 
         return res.status(404).json({ message: `No channel found with id ${receivedObj.channel_id}` });
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, channel);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
 
    // prevent set this values:
@@ -127,6 +130,16 @@ export async function createNewEvent (req, res, next) {
     if (!event.isValid()) 
         return res.status(409).json({ message: `Cannot create the event` });
 
+    // calculate the milliseconds timeout
+    const now = new Date(new Date().toUTCString());
+    const timeout = new Date(event.action_date) - now;
+
+    // Check if the timeout is less than or equal to 30 seconds or if the timeout is NaN
+    if (timeout <= 30000 || isNaN(timeout)) {
+        // Schedule the event immediately
+        eventScheduler.scheduleEvent(event);
+    }
+
     // transform the event to a ResponseModel
     var resEvent = new ResponseChannelEvent(event);
     res.status(200).send(resEvent);
@@ -146,13 +159,13 @@ export async function editEvent(req, res, next) {
     if (!existingEvent.isValid()) 
         return res.status(404).json({ error: `No event found with id ${receivedObj._id}`});
 
-    // check if the user is member and admin of requested channel
+    // if the event is completed, cannot be edited
     if (existingEvent.status === "completed")
         return res.status(400).json({ message: `Cannot edit a completed event` });
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, existingEvent.channel_id);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, existingEvent.channel_id);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
 
     // create a Channel object to insert by copying the existing one
@@ -204,9 +217,9 @@ export async function deleteEvent(req, res, next) {
     if (!channel.isValid()) 
         return res.status(404).json({ message: `No channel found with id ${event.channel_id}` });
 
-    // check if the user is member and admin of requested channel
-    var isAdminAndMember = await checkAdminAndMemberChannel(auth._id, channel);
-    if (!isAdminAndMember)
+    // check if the user is admin of requested channel
+    var isAdmin = await checkAdminChannel(auth._id, channel);
+    if (!isAdmin)
         return res.status(401).json({ message: `You need to be admin of the channel` });
     
     // TODO: dont delete, mark a property as deleted
