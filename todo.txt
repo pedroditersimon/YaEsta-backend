@@ -14,9 +14,7 @@ TODO:
 - Especificar en la documentacion de notion, como se debe pasar los documentos de los endpoints de edit y create
 - Accionar la creacion de canal
 - Hacer el front para editar los access documents
-- (x) Permitir a los admins de canales poder crear eventos y ver los canales, aunque no sean miembros.
-- (x) Ejecutar al instante los eventos creados con fecha pasada o menor a 1min
-- (x) Hacer una lista de todos los tokens (notificacion) de dispositivos en los que inicia sesion el usuario
+- (hecho) Hacer una lista de todos los tokens (notificacion) de dispositivos en los que inicia sesion el usuario
 - Desubscribir de los topicos el dispositivo si un usuario cierra sesion
 
 Recomendaciones:

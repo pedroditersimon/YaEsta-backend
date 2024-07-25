@@ -131,7 +131,7 @@ class EventScheduler {
         const topic = `${event.channel_id}`;
         const payload = {
             notification: {
-                title: `[!] ${event.title}`,
+                title: `YaEsta! ${event.title}`,
                 body: `${event.description}`
             },
         };
