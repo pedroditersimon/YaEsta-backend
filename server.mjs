@@ -21,12 +21,17 @@ const app = express();
 const port = process.env.PORT || 3001;
 app.use(express.json());
 
-corsOptions = {
-  origin: process.env.CORS_ORIGIN, // Replace with your frontend domain
+// Configura CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir cualquier origen
+    callback(null, origin);
+  },
+  credentials: true, // Habilita cookies y autenticación HTTP
   allowedHeaders: ['Content-Type', 'Authorization'],
   preflightContinue: false,
   optionsSuccessStatus: 204
-}
+};
 
 // CORS
 app.use(cors(corsOptions));
