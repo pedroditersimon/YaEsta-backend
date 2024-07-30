@@ -46,7 +46,7 @@ app.use("/", accessDocumentsRouter);
 app.use("/", notificationsRouter);
 
 // server status
-app.use("/status", async (req, res, next) => res.status(200));
+app.get("/status", async (req, res, next) => res.status(200));
 
 // EventScheduler
 // 30 seconds interval: 30 * 1000
