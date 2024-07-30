@@ -21,14 +21,18 @@ const app = express();
 const port = process.env.PORT || 3001;
 app.use(express.json());
 
-// CORS
-app.use(cors({
-  origin: [process.env.CORS_ORIGIN], // Replace with your frontend domain
-  credentials: true, // Enable cookies and HTTP authentication
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
+corsOptions = {
+  origin: process.env.CORS_ORIGIN, // Replace with your frontend domain
+  allowedHeaders: ['Content-Type', 'Authorization'],
   preflightContinue: false,
   optionsSuccessStatus: 204
-}));
+}
+
+// CORS
+app.use(cors(corsOptions));
+
+// Maneja las solicitudes preflight
+app.options('*', cors(corsOptions));
 
 app.use(cookieParser());
 app.use(morgan("dev"));
