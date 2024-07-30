@@ -25,7 +25,9 @@ app.use(express.json());
 app.use(cors({
   origin: [process.env.CORS_ORIGIN], // Replace with your frontend domain
   credentials: true, // Enable cookies and HTTP authentication
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 app.use(cookieParser());
